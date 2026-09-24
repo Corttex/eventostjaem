@@ -26,13 +26,16 @@ export async function POST(req: Request) {
     const asaasApiKey = process.env.ASAAS_API_KEY;
     const asaasUrl = 'https://api.asaas.com/v3';
 
+    const cleanCpf = cpf.replace(/\D/g, '');
+    const cleanPhone = phone.replace(/\D/g, '');
+
     const customerRes = await fetch(`${asaasUrl}/customers`, {
       method: 'POST',
       headers: {
         'Content-Type': 'application/json',
         'access_token': asaasApiKey || ''
       },
-      body: JSON.stringify({ name, email, cpfCnpj: cpf, mobilePhone: phone })
+      body: JSON.stringify({ name, email, cpfCnpj: cleanCpf, mobilePhone: cleanPhone })
     });
 
     const customerData = await customerRes.json();
@@ -81,8 +84,8 @@ export async function POST(req: Request) {
       pixQrCode: paymentMethod === 'PIX' ? chargeData.pixQrCode : null
     });
 
-  } catch (error) {
+  } catch (error: any) {
     console.error('Checkout API Error:', error);
-    return NextResponse.json({ error: 'Erro interno no servidor' }, { status: 500 });
+    return NextResponse.json({ error: 'Erro interno no servidor', details: error.message }, { status: 500 });
   }
 }
