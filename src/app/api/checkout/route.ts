@@ -43,8 +43,14 @@ export async function POST(req: Request) {
     try { customerData = JSON.parse(customerText); } catch { customerData = { raw: customerText }; }
     
     if (!customerRes.ok) {
-      console.error('Erro Asaas Customer:', customerData);
-      return NextResponse.json({ error: 'Erro ao cadastrar cliente no portal de pagamentos', details: customerText }, { status: 500 });
+      console.error(`Erro Asaas Customer (Status: ${customerRes.status}):`, customerData);
+      
+      let errorMessage = 'Erro ao cadastrar cliente no portal de pagamentos';
+      if (customerRes.status === 401) {
+        errorMessage = 'Erro de Autenticação (401) no Asaas. Verifique se a sua API Key (access_token) está correta e se a conta é de Produção/Sandbox adequada.';
+      }
+      
+      return NextResponse.json({ error: errorMessage, details: `Status: ${customerRes.status} | Resposta: ${customerText}` }, { status: 500 });
     }
 
     // 3. Gerar a Cobrança
@@ -68,8 +74,14 @@ export async function POST(req: Request) {
     try { chargeData = JSON.parse(chargeText); } catch { chargeData = { raw: chargeText }; }
     
     if (!chargeRes.ok) {
-      console.error('Erro Asaas Pagamento:', chargeData);
-      return NextResponse.json({ error: 'Erro ao gerar pagamento', details: chargeText }, { status: 500 });
+      console.error(`Erro Asaas Pagamento (Status: ${chargeRes.status}):`, chargeData);
+      
+      let errorMessage = 'Erro ao gerar pagamento';
+      if (chargeRes.status === 401) {
+        errorMessage = 'Erro de Autenticação (401) ao gerar cobrança no Asaas.';
+      }
+
+      return NextResponse.json({ error: errorMessage, details: `Status: ${chargeRes.status} | Resposta: ${chargeText}` }, { status: 500 });
     }
 
     // 4. Salvar o Ticket no Banco de Dados
