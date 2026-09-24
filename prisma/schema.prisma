@@ -1,0 +1,37 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./dev.db"
+}
+
+model User {
+  id        String   @id @default(uuid())
+  name      String
+  email     String   @unique
+  cpf       String   @unique
+  phone     String
+  password  String
+  role      String   @default("USER") // USER, ADMIN, SCANNER
+  tickets   Ticket[]
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Ticket {
+  id            String   @id @default(uuid())
+  userId        String
+  user          User     @relation(fields: [userId], references: [id])
+  asaasPaymentId String?  @unique
+  status        String   @default("PENDING") // PENDING, PAID, CANCELLED
+  paymentMethod String?  // PIX, CREDIT_CARD, BOLETO
+  amount        Float    @default(0) // Preço do ingresso
+  qrCodeToken   String   @unique @default(uuid())
+  scanned       Boolean  @default(false)
+  scannedAt     DateTime?
+  pdfUrl        String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
