@@ -38,10 +38,13 @@ export async function POST(req: Request) {
       body: JSON.stringify({ name, email, cpfCnpj: cleanCpf, mobilePhone: cleanPhone })
     });
 
-    const customerData = await customerRes.json();
+    const customerText = await customerRes.text();
+    let customerData;
+    try { customerData = JSON.parse(customerText); } catch { customerData = { raw: customerText }; }
+    
     if (!customerRes.ok) {
       console.error('Erro Asaas Customer:', customerData);
-      return NextResponse.json({ error: 'Erro ao cadastrar cliente no portal de pagamentos' }, { status: 500 });
+      return NextResponse.json({ error: 'Erro ao cadastrar cliente no portal de pagamentos', details: customerText }, { status: 500 });
     }
 
     // 3. Gerar a Cobrança
@@ -60,10 +63,13 @@ export async function POST(req: Request) {
       })
     });
 
-    const chargeData = await chargeRes.json();
+    const chargeText = await chargeRes.text();
+    let chargeData;
+    try { chargeData = JSON.parse(chargeText); } catch { chargeData = { raw: chargeText }; }
+    
     if (!chargeRes.ok) {
       console.error('Erro Asaas Pagamento:', chargeData);
-      return NextResponse.json({ error: 'Erro ao gerar pagamento' }, { status: 500 });
+      return NextResponse.json({ error: 'Erro ao gerar pagamento', details: chargeText }, { status: 500 });
     }
 
     // 4. Salvar o Ticket no Banco de Dados
