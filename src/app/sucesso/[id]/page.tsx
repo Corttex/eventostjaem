@@ -4,9 +4,10 @@ import { PrismaClient } from '@prisma/client';
 
 const prisma = new PrismaClient();
 
-export default async function SucessoPage({ params }: { params: { id: string } }) {
+export default async function SucessoPage({ params }: { params: Promise<{ id: string }> }) {
+  const { id } = await params;
   const ticket = await prisma.ticket.findUnique({
-    where: { id: params.id },
+    where: { id: id },
     include: { user: true }
   });
 

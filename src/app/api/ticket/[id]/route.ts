@@ -7,9 +7,9 @@ import path from 'path';
 
 const prisma = new PrismaClient();
 
-export async function GET(req: Request, { params }: { params: { id: string } }) {
+export async function GET(req: Request, { params }: { params: Promise<{ id: string }> }) {
   try {
-    const ticketId = params.id;
+    const { id: ticketId } = await params;
 
     // Buscar o ticket e os dados do usuário
     const ticket = await prisma.ticket.findUnique({
