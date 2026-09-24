@@ -189,7 +189,7 @@ export async function GET(req: Request, { params }: { params: { id: string } }) 
     // Salvar e Enviar o PDF
     const pdfBytes = await pdfDoc.save();
 
-    return new NextResponse(pdfBytes, {
+    return new NextResponse(pdfBytes as BodyInit, {
       status: 200,
       headers: {
         'Content-Type': 'application/pdf',
