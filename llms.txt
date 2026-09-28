@@ -1,0 +1,44 @@
+# Project Overview: TJAEM Eventos (Beta)
+
+This is a Next.js (App Router) application built for selling event tickets and validating them at the entrance.
+
+## Tech Stack
+- Framework: Next.js 16+ (App Router, Turbopack)
+- Styling: TailwindCSS (with a custom courtroom background `bg-tribunal.jpg` set via `globals.css`)
+- Database: PostgreSQL (Migrated from SQLite)
+- ORM: Prisma (`User` and `Ticket` models)
+- Payment Gateway: Asaas API (PIX transactions)
+- PDF Generation: `pdf-lib`
+- QR Code Scanning: `html5-qrcode`
+
+## Core Features
+1. **Ticket Purchasing (Frontend & Backend):**
+   - Multi-step checkout (`/selecionar-ingressos`).
+   - Dynamic collection of Name, Email, and CPF based on ticket quantity.
+   - API route `/api/checkout` calls Asaas to generate a PIX QR Code.
+   - Frontend polls `/api/check-payment` to verify when payment is approved.
+
+2. **Ticket Generation (PDF):**
+   - Upon successful payment, `/api/ticket/[id]` generates a PDF ticket using `pdf-lib`.
+   - The PDF includes a white-background CAMEB logo, the event date (October 20, 2026), and a QR Code for validation.
+
+3. **Validator Dashboard (`/validador`):**
+   - Protected by simple auth (username: `master`, password/pin: `807522`).
+   - Displays real-time stats: Total Sold, Scanned, Remaining.
+   - List of all tickets (both Paid and Pending).
+   - Allows manual check-in via toggle switch (`/api/validador/manual-checkin`).
+   - Integrates `html5-qrcode` for scanning QR Codes via Camera or USB Barcode Scanner (`/api/validador/scan`).
+
+## Deployment Context (VPS)
+- The local environment was originally SQLite but has been explicitly configured to PostgreSQL for VPS deployment.
+- Database URL points to an internal Docker/VPS network (`x3dn3ozarslvxo4rsvzjkrzh`).
+- **Required Deployment Commands:**
+  - `npx prisma generate` (to build the correct query engine)
+  - `npx prisma db push` (to sync schema with PostgreSQL)
+
+## Important Files
+- `src/app/page.tsx`: Landing page.
+- `src/app/validador/page.tsx`: Validator UI and logic.
+- `src/app/api/check-payment/route.ts`: Payment status check.
+- `src/app/api/ticket/[id]/route.ts`: PDF generation logic.
+- `prisma/schema.prisma`: Database schema.
