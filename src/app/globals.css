@@ -17,12 +17,14 @@
 }
 
 body {
-  background-color: var(--background);
+  background-color: #040812;
   background-image: 
-    radial-gradient(circle at 15% 50%, rgba(223, 186, 82, 0.08), transparent 35%),
-    radial-gradient(circle at 85% 30%, rgba(223, 186, 82, 0.05), transparent 45%);
-  background-size: 200% 200%;
-  animation: gradientMove 15s ease infinite;
+    linear-gradient(to bottom, rgba(4, 8, 18, 0.82) 0%, rgba(4, 8, 18, 0.90) 50%, rgba(4, 8, 18, 0.96) 100%),
+    radial-gradient(circle at 50% 30%, rgba(223, 186, 82, 0.14), transparent 60%),
+    url('/bg-tribunal.jpg');
+  background-size: cover;
+  background-position: center top;
+  background-repeat: no-repeat;
   background-attachment: fixed;
   color: var(--foreground);
   font-family: var(--font-inter), 'Inter', sans-serif;

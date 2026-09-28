@@ -24,7 +24,7 @@ model Ticket {
   id            String   @id @default(uuid())
   userId        String
   user          User     @relation(fields: [userId], references: [id])
-  asaasPaymentId String?  @unique
+  asaasPaymentId String?
   status        String   @default("PENDING") // PENDING, PAID, CANCELLED
   paymentMethod String?  // PIX, CREDIT_CARD, BOLETO
   amount        Float    @default(0) // Preço do ingresso

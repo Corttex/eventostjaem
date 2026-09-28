@@ -2,41 +2,22 @@
 import Link from 'next/link';
 import { Shield, BookOpen, GraduationCap, Award, CheckCircle2, MapPin, Calendar, X, Ticket } from 'lucide-react';
 import { useState } from 'react';
+import { useRouter } from 'next/navigation';
 
 export default function Home() {
+  const router = useRouter();
   const [loading, setLoading] = useState(false);
   const [loginModalOpen, setLoginModalOpen] = useState(false);
   const [loginLoading, setLoginLoading] = useState(false);
 
-  const handleCheckout = async (e: React.FormEvent) => {
+  const handleStepToSelectTickets = (e: React.FormEvent) => {
     e.preventDefault();
-    setLoading(true);
+    const formData = new FormData(e.target as HTMLFormElement);
+    const data = Object.fromEntries(formData.entries());
     
-    try {
-      const formData = new FormData(e.target as HTMLFormElement);
-      const data = Object.fromEntries(formData.entries());
-      
-      const res = await fetch('/api/checkout', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(data)
-      });
-      
-      const result = await res.json();
-      
-      if (res.ok && result.success) {
-        if (result.paymentUrl) {
-          window.open(result.paymentUrl, '_blank');
-        }
-        window.location.href = `/sucesso/${result.ticketId}`;
-      } else {
-        alert(`${result.error}${result.details ? ': ' + result.details : ''}`);
-      }
-    } catch (error) {
-      alert('Erro de conexão.');
-    } finally {
-      setLoading(false);
-    }
+    // Salvar dados do comprador na sessão e direcionar para a tela de seleção de ingressos
+    sessionStorage.setItem('tjaem_buyer_data', JSON.stringify(data));
+    router.push('/selecionar-ingressos');
   };
 
   const handleLogin = async (e: React.FormEvent) => {
@@ -56,7 +37,7 @@ export default function Home() {
       const result = await res.json();
       
       if (res.ok && result.success) {
-        window.location.href = `/sucesso/${result.ticketId}`;
+        window.location.href = `/sucesso/${result.paymentId || result.ticketId}`;
       } else {
         alert(`${result.error}${result.details ? ': ' + result.details : ''}`);
       }
@@ -77,11 +58,14 @@ export default function Home() {
             className="flex gap-6 items-center justify-center animate-fade-up delay-100 mobile-col" 
             style={{ marginBottom: '4rem', width: '100%', maxWidth: '800px' }}
           >
-            <div className="glass-panel flex items-center justify-center" style={{ flex: 1, padding: '1.5rem', borderRadius: '24px' }}>
+            <div 
+              className="glass-panel flex items-center justify-center" 
+              style={{ flex: 1, padding: '1.5rem', borderRadius: '24px', minHeight: '175px' }}
+            >
               <img 
                 src="/logo-tjaem.png" 
                 alt="Logo TJAEM Brasil" 
-                style={{ height: '140px', objectFit: 'contain', borderRadius: '12px' }} 
+                style={{ height: '140px', objectFit: 'contain' }} 
               />
             </div>
 
@@ -89,11 +73,21 @@ export default function Home() {
               <span style={{ fontSize: '1.5rem' }}>&</span>
             </div>
 
-            <div className="glass-panel flex items-center justify-center" style={{ flex: 1, padding: '1.5rem', borderRadius: '24px', background: 'rgba(255,255,255,0.9)' }}>
+            <div 
+              className="flex items-center justify-center" 
+              style={{ 
+                flex: 1, 
+                padding: '1.8rem 2.2rem', 
+                borderRadius: '24px', 
+                background: '#ffffff',
+                boxShadow: '0 10px 35px rgba(0, 0, 0, 0.4)',
+                minHeight: '175px'
+              }}
+            >
               <img 
                 src="/logo-cameb.png" 
                 alt="Logo CAMEB Brasil" 
-                style={{ height: '100px', objectFit: 'contain', filter: 'brightness(1.1)' }} 
+                style={{ height: '110px', maxWidth: '100%', objectFit: 'contain' }} 
               />
             </div>
           </div>
@@ -115,8 +109,8 @@ export default function Home() {
             <div className="glass-panel flex flex-col items-center justify-center" style={{ flex: 1, padding: '1.5rem' }}>
               <Calendar color="var(--primary)" size={32} style={{ marginBottom: '1rem' }} />
               <p style={{ margin: 0, fontSize: '0.9rem', color: 'var(--primary)', letterSpacing: '1px' }}>DATA</p>
-              <strong style={{ fontSize: '1.3rem', marginTop: '0.5rem' }}>11 de Outubro de 2026</strong>
-              <p style={{ margin: '0.2rem 0 0', fontSize: '1rem', color: 'rgba(255,255,255,0.7)' }}>Domingo • Das 9h às 17h</p>
+              <strong style={{ fontSize: '1.3rem', marginTop: '0.5rem' }}>20 de Outubro de 2026</strong>
+              <p style={{ margin: '0.2rem 0 0', fontSize: '1rem', color: 'rgba(255,255,255,0.7)' }}>Terça-feira • Das 9h às 17h</p>
             </div>
             <div className="glass-panel flex flex-col items-center justify-center" style={{ flex: 1, padding: '1.5rem' }}>
               <MapPin color="var(--primary)" size={32} style={{ marginBottom: '1rem' }} />
@@ -221,45 +215,39 @@ export default function Home() {
 
             <section id="comprar" className="glass-panel" style={{ flex: 1, border: '1px solid var(--primary)', boxShadow: '0 0 40px rgba(223, 186, 82, 0.1)' }}>
               <div style={{ textAlign: 'center', marginBottom: '2.5rem' }}>
-                <h3 style={{ fontSize: '2rem', color: '#fff' }}>Inscreva-se</h3>
-                <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: '0.5rem' }}>Reserve sua credencial e acesse a área exclusiva.</p>
+                <h3 style={{ fontSize: '2rem', color: '#fff' }}>Inscreva-se no Evento</h3>
+                <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: '0.5rem' }}>Informe seus dados para selecionar seus ingressos oficiais.</p>
               </div>
               
-              <form className="flex flex-col gap-5" onSubmit={handleCheckout}>
-                <input type="text" name="name" placeholder="Nome Completo" className="input-field" required />
-                <input type="email" name="email" placeholder="E-mail" className="input-field" required />
-                <div className="flex gap-4 mobile-col">
-                  <input type="text" name="cpf" placeholder="CPF" className="input-field" required />
-                  <input type="tel" name="phone" placeholder="WhatsApp" className="input-field" required />
+              <form className="flex flex-col gap-5" onSubmit={handleStepToSelectTickets}>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.35rem', display: 'block' }}>Nome Completo *</label>
+                  <input type="text" name="name" placeholder="Seu Nome Completo" className="input-field" required />
                 </div>
-                <input type="password" name="password" placeholder="Crie uma Senha" className="input-field" required />
-                
-                <div style={{ margin: '1.5rem 0', padding: '1.5rem', background: 'rgba(0,0,0,0.3)', borderRadius: '12px' }}>
-                  <p style={{ marginBottom: '1rem', fontWeight: 600, color: 'var(--primary)' }}>Método de Pagamento</p>
-                  <div className="flex gap-4 mobile-col">
-                    <label className="custom-radio">
-                      <input type="radio" name="paymentMethod" value="PIX" defaultChecked /> 
-                      <span className="flex flex-col items-start leading-tight">
-                        <span>PIX</span>
-                        <span style={{ fontSize: '0.75rem', color: '#4ade80' }}>Aprovação Imediata</span>
-                      </span>
-                    </label>
-                    <label className="custom-radio">
-                      <input type="radio" name="paymentMethod" value="CREDIT_CARD" />
-                      <span>Cartão</span>
-                    </label>
-                    <label className="custom-radio">
-                      <input type="radio" name="paymentMethod" value="BOLETO" />
-                      <span>Boleto</span>
-                    </label>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.35rem', display: 'block' }}>E-mail *</label>
+                  <input type="email" name="email" placeholder="seu.email@exemplo.com" className="input-field" required />
+                </div>
+                <div className="flex gap-4 mobile-col">
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.35rem', display: 'block' }}>CPF *</label>
+                    <input type="text" name="cpf" placeholder="000.000.000-00" className="input-field" required />
+                  </div>
+                  <div style={{ flex: 1 }}>
+                    <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.35rem', display: 'block' }}>WhatsApp *</label>
+                    <input type="tel" name="phone" placeholder="(61) 99999-9999" className="input-field" required />
                   </div>
                 </div>
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.35rem', display: 'block' }}>Crie uma Senha para acessar sua credencial</label>
+                  <input type="password" name="password" placeholder="Sua senha de acesso" className="input-field" required />
+                </div>
 
-                <button type="submit" className="btn-primary btn-full" style={{ marginTop: '0.5rem' }} disabled={loading}>
-                  {loading ? 'Processando...' : 'Finalizar Inscrição Segura'}
+                <button type="submit" className="btn-primary btn-full" style={{ marginTop: '0.8rem', padding: '1.2rem', fontSize: '1.15rem' }}>
+                  Avançar para Selecionar Ingressos →
                 </button>
-                <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '1rem' }}>
-                  Ambiente 100% seguro processado por Asaas.
+                <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.5rem' }}>
+                  Na próxima etapa você escolhe a quantidade e participantes.
                 </p>
               </form>
             </section>
@@ -283,14 +271,14 @@ export default function Home() {
             </button>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
               <Ticket color="var(--primary)" size={48} style={{ margin: '0 auto 1rem' }} />
-              <h3 style={{ fontSize: '1.8rem', color: '#fff' }}>Acessar Ingresso</h3>
-              <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: '0.5rem' }}>Digite seus dados para visualizar sua credencial.</p>
+              <h3 style={{ fontSize: '1.8rem', color: '#fff' }}>Consultar Meus Ingressos</h3>
+              <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: '0.5rem' }}>Digite seu CPF ou E-mail para visualizar suas credenciais.</p>
             </div>
             <form className="flex flex-col gap-5" onSubmit={handleLogin}>
-              <input type="text" name="cpf" placeholder="CPF (apenas números)" className="input-field" required />
-              <input type="password" name="password" placeholder="Sua Senha" className="input-field" required />
-              <button type="submit" className="btn-primary btn-full" style={{ marginTop: '1rem' }} disabled={loginLoading}>
-                {loginLoading ? 'Buscando...' : 'Entrar e Ver Ingresso'}
+              <input type="text" name="cpf" placeholder="CPF ou E-mail" className="input-field" required />
+              <input type="password" name="password" placeholder="Sua Senha (caso tenha cadastrado)" className="input-field" />
+              <button type="submit" className="btn-primary btn-full" style={{ marginTop: '0.5rem', padding: '1.1rem' }} disabled={loginLoading}>
+                {loginLoading ? 'Buscando ingressos...' : 'Consultar Meus Ingressos'}
               </button>
             </form>
           </div>
