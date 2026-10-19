@@ -1,6 +1,7 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
+import { getAsaasApiKey } from '@/lib/asaas';
 
 const prisma = new PrismaClient();
 
@@ -57,7 +58,7 @@ export async function POST(req: Request) {
     }
 
     // 2. Chamar a API do Asaas para obter ou gerar o Cliente (Comprador)
-    const asaasApiKey = process.env.ASAAS_API_KEY;
+    const asaasApiKey = getAsaasApiKey();
     const asaasUrl = 'https://api.asaas.com/v3';
 
     let customerId = '';
@@ -114,15 +115,17 @@ export async function POST(req: Request) {
 
     // 3. Calcular Valor Total e Gerar a Cobrança no Asaas
     const ticketCount = attendees.length;
-    const unitPrice = 150.00;
+    const ticketType = body.ticketType || 'VIP'; // 'PADRAO' (R$ 150) ou 'VIP' (R$ 349,00)
+    const unitPrice = ticketType === 'PADRAO' ? 150.00 : 349.00;
     const totalAmount = ticketCount * unitPrice;
 
+    const ticketTypeName = ticketType === 'PADRAO' ? 'Ingresso Padrão' : 'Ingresso VIP (Kit Exclusivo)';
     const chargePayload: any = {
       customer: customerId,
       billingType: paymentMethod, // PIX, CREDIT_CARD, BOLETO
       value: totalAmount,
       dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Vence em +1 dia
-      description: `Ingresso(s) - 30 Anos da Lei de Arbitragem no Brasil (${ticketCount} ${ticketCount > 1 ? 'ingressos' : 'ingresso'})`
+      description: `${ticketTypeName} - 30 Anos da Lei de Arbitragem no Brasil (${ticketCount} ${ticketCount > 1 ? 'ingressos' : 'ingresso'})`
     };
 
     const chargeRes = await fetch(`${asaasUrl}/payments`, {
@@ -183,6 +186,7 @@ export async function POST(req: Request) {
           asaasPaymentId: chargeData.id,
           paymentMethod: paymentMethod,
           amount: unitPrice,
+          ticketType: ticketType,
           status: 'PENDING' // Fica PENDENTE até o pagamento ser confirmado!
         }
       });

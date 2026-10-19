@@ -2,6 +2,7 @@ import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import QRCode from 'qrcode';
+import { getAsaasApiKey } from '@/lib/asaas';
 import fs from 'fs';
 import path from 'path';
 
@@ -40,7 +41,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
     // Se estiver pendente, faz uma verificação rápida no Asaas caso já tenha sido aprovado
     if (!isPaid && ticket.asaasPaymentId) {
       try {
-        const asaasApiKey = process.env.ASAAS_API_KEY;
+        const asaasApiKey = getAsaasApiKey();
         const res = await fetch(`https://api.asaas.com/v3/payments/${ticket.asaasPaymentId}`, {
           headers: {
             'Content-Type': 'application/json',
@@ -283,7 +284,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       color: primaryGold,
     });
 
-    page.drawText('20 de Outubro de 2026 • Das 09h às 17h', {
+    page.drawText('22 de Novembro de 2026 • Das 09h às 16h', {
       x: cardX + 20,
       y: card2Y + card2Height - 50,
       size: 12,

@@ -343,101 +343,113 @@ export default function ValidadorPage() {
     <main className="container animate-fade-in" style={{ padding: '2.5rem 1rem 6rem', maxWidth: '1100px' }}>
       
       {/* Topo com Identificação do Evento e Ações */}
-      <div className="flex items-center justify-between mobile-col gap-4" style={{ marginBottom: '2rem' }}>
+      <div className="flex items-center justify-between tablet-col gap-4" style={{ marginBottom: '1.8rem' }}>
         <div>
-          <span style={{ fontSize: '0.85rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700 }}>
+          <span style={{ fontSize: '0.8rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700 }}>
             Painel Oficial do Validador
           </span>
-          <h1 className="gold-gradient-text" style={{ fontSize: '2.2rem', margin: '0.3rem 0 0.5rem' }}>
+          <h1 className="gold-gradient-text" style={{ fontSize: '2.2rem', margin: '0.2rem 0 0.5rem', lineHeight: 1.2 }}>
             30 Anos da Lei de Arbitragem no Brasil
           </h1>
-          <div className="flex gap-4 mobile-col" style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.8)' }}>
+          <div className="flex gap-4 tablet-col" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>
             <span className="flex items-center gap-2">
-              <Calendar size={16} color="var(--primary)" /> 20 de Outubro de 2026 • Das 09h às 17h
+              <Calendar size={16} color="var(--primary)" /> 22 de Novembro de 2026 • 09h às 16h
             </span>
             <span className="flex items-center gap-2">
-              <MapPin size={16} color="var(--primary)" /> SGAS quadra 603 Sul, Asa Sul, Brasília / DF
+              <MapPin size={16} color="var(--primary)" /> Asa Sul, Brasília / DF
             </span>
           </div>
         </div>
 
-        <div className="flex gap-3 items-center">
+        <div className="flex gap-2 items-center mobile-col" style={{ width: 'auto' }}>
           <button 
             onClick={openScannerModal}
             className="btn-primary"
             style={{ 
-              padding: '0.9rem 1.8rem', 
-              fontSize: '1.05rem', 
+              padding: '0.85rem 1.4rem', 
+              fontSize: '1rem', 
               display: 'flex', 
               alignItems: 'center', 
-              gap: '0.6rem',
-              boxShadow: '0 0 25px rgba(223, 186, 82, 0.3)'
+              justifyContent: 'center',
+              gap: '0.5rem',
+              boxShadow: '0 0 25px rgba(223, 186, 82, 0.35)',
+              minHeight: '44px'
             }}
           >
-            <QrCode size={22} />
-            Validador QR Code
+            <QrCode size={20} />
+            Escanear QR Code
           </button>
 
           <button 
             onClick={handleLogout}
             className="btn-secondary"
-            style={{ padding: '0.9rem 1.2rem', display: 'flex', alignItems: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.7)' }}
+            style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.7)', minHeight: '44px' }}
             title="Sair do Validador"
           >
             <LogOut size={18} />
-            Sair
+            <span className="hidden-mobile">Sair</span>
           </button>
         </div>
       </div>
 
       {/* Cards de Métricas em Tempo Real */}
-      <div className="grid grid-cols-4 gap-4 mobile-col" style={{ marginBottom: '2rem' }}>
-        <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase' }}>Total Inscrições</span>
-          <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#fff', marginTop: '0.2rem' }}>
+      <div className="grid grid-cols-4 gap-3" style={{ marginBottom: '1.8rem' }}>
+        <div className="glass-panel" style={{ padding: '1.2rem 1rem', textAlign: 'center' }}>
+          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Inscrições</span>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#fff', marginTop: '0.2rem', lineHeight: 1.1 }}>
             {stats.total}
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderBottom: '3px solid #4ade80' }}>
-          <span style={{ fontSize: '0.85rem', color: '#4ade80', textTransform: 'uppercase', fontWeight: 600 }}>Confirmados (Pagos)</span>
-          <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#4ade80', marginTop: '0.2rem' }}>
+        <div className="glass-panel" style={{ padding: '1.2rem 1rem', textAlign: 'center', borderBottom: '3px solid #4ade80' }}>
+          <span style={{ fontSize: '0.75rem', color: '#4ade80', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Confirmados</span>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#4ade80', marginTop: '0.2rem', lineHeight: 1.1 }}>
             {stats.paid}
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderBottom: '3px solid var(--primary)' }}>
-          <span style={{ fontSize: '0.85rem', color: 'var(--primary)', textTransform: 'uppercase', fontWeight: 600 }}>Aguardando Pagamento</span>
-          <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--primary)', marginTop: '0.2rem' }}>
+        <div className="glass-panel" style={{ padding: '1.2rem 1rem', textAlign: 'center', borderBottom: '3px solid var(--primary)' }}>
+          <span style={{ fontSize: '0.75rem', color: 'var(--primary)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Aguardando</span>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--primary)', marginTop: '0.2rem', lineHeight: 1.1 }}>
             {stats.pending}
           </div>
         </div>
 
-        <div className="glass-panel" style={{ padding: '1.5rem', textAlign: 'center', borderBottom: '3px solid #60a5fa' }}>
-          <span style={{ fontSize: '0.85rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 600 }}>Check-ins Realizados</span>
-          <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#60a5fa', marginTop: '0.2rem' }}>
-            {stats.scanned} <span style={{ fontSize: '1rem', fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}>/ {stats.paid}</span>
+        <div className="glass-panel" style={{ padding: '1.2rem 1rem', textAlign: 'center', borderBottom: '3px solid #60a5fa' }}>
+          <span style={{ fontSize: '0.75rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Check-ins</span>
+          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#60a5fa', marginTop: '0.2rem', lineHeight: 1.1 }}>
+            {stats.scanned} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>/ {stats.paid}</span>
           </div>
         </div>
       </div>
 
       {/* Barra de Filtros e Busca */}
-      <div className="glass-panel" style={{ padding: '1.2rem 1.5rem', marginBottom: '1.5rem' }}>
-        <div className="flex items-center justify-between mobile-col gap-4">
+      <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
+        <div className="flex items-center justify-between tablet-col gap-3">
           
-          {/* Abas de Filtro */}
-          <div className="flex gap-2 mobile-col">
+          {/* Abas de Filtro com Scroll Horizontal no Celular */}
+          <div 
+            className="flex gap-2" 
+            style={{ 
+              overflowX: 'auto', 
+              maxWidth: '100%', 
+              paddingBottom: '4px',
+              scrollbarWidth: 'none',
+              WebkitOverflowScrolling: 'touch'
+            }}
+          >
             <button
               onClick={() => setFilter('ALL')}
               style={{
                 background: filter === 'ALL' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
                 color: filter === 'ALL' ? '#000' : '#fff',
                 border: 'none',
-                padding: '0.5rem 1rem',
+                padding: '0.5rem 0.9rem',
                 borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                cursor: 'pointer'
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               Todos ({stats.total})
@@ -448,11 +460,12 @@ export default function ValidadorPage() {
                 background: filter === 'PAID' ? '#4ade80' : 'rgba(255,255,255,0.05)',
                 color: filter === 'PAID' ? '#000' : '#fff',
                 border: 'none',
-                padding: '0.5rem 1rem',
+                padding: '0.5rem 0.9rem',
                 borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                cursor: 'pointer'
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               Pagos ({stats.paid})
@@ -463,11 +476,12 @@ export default function ValidadorPage() {
                 background: filter === 'PENDING' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
                 color: filter === 'PENDING' ? '#000' : '#fff',
                 border: 'none',
-                padding: '0.5rem 1rem',
+                padding: '0.5rem 0.9rem',
                 borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                cursor: 'pointer'
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               Aguardando ({stats.pending})
@@ -478,11 +492,12 @@ export default function ValidadorPage() {
                 background: filter === 'SCANNED' ? '#60a5fa' : 'rgba(255,255,255,0.05)',
                 color: filter === 'SCANNED' ? '#000' : '#fff',
                 border: 'none',
-                padding: '0.5rem 1rem',
+                padding: '0.5rem 0.9rem',
                 borderRadius: '8px',
-                fontWeight: 600,
-                fontSize: '0.9rem',
-                cursor: 'pointer'
+                fontWeight: 700,
+                fontSize: '0.85rem',
+                cursor: 'pointer',
+                whiteSpace: 'nowrap'
               }}
             >
               Presentes ({stats.scanned})
@@ -490,7 +505,7 @@ export default function ValidadorPage() {
           </div>
 
           {/* Campo de Busca e Botão Atualizar */}
-          <div className="flex gap-2 items-center" style={{ flex: 1, maxWidth: '400px' }}>
+          <div className="flex gap-2 items-center" style={{ width: '100%', maxWidth: '420px' }}>
             <div style={{ position: 'relative', width: '100%' }}>
               <Search size={18} color="rgba(255,255,255,0.5)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
               <input
@@ -499,7 +514,7 @@ export default function ValidadorPage() {
                 value={search}
                 onChange={(e) => setSearch(e.target.value)}
                 className="input-field"
-                style={{ paddingLeft: '2.4rem', fontSize: '0.9rem', padding: '0.6rem 0.8rem 0.6rem 2.4rem' }}
+                style={{ paddingLeft: '2.4rem', fontSize: '0.9rem', padding: '0.65rem 0.8rem 0.65rem 2.4rem', width: '100%' }}
               />
             </div>
 
@@ -507,7 +522,7 @@ export default function ValidadorPage() {
               onClick={fetchTickets}
               disabled={loading}
               className="btn-secondary"
-              style={{ padding: '0.6rem 0.8rem' }}
+              style={{ padding: '0.65rem 0.85rem', minWidth: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
               title="Atualizar lista em tempo real"
             >
               <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
@@ -517,139 +532,238 @@ export default function ValidadorPage() {
         </div>
       </div>
 
-      {/* Tabela de Ingressos */}
-      <div className="glass-panel" style={{ padding: '1rem', overflowX: 'auto' }}>
-        <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
-          <thead>
-            <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--primary)', fontSize: '0.85rem' }}>
-              <th style={{ padding: '0.8rem 1rem' }}>PARTICIPANTE</th>
-              <th style={{ padding: '0.8rem 1rem' }}>CPF / CONTATO</th>
-              <th style={{ padding: '0.8rem 1rem' }}>CREDENCIAL</th>
-              <th style={{ padding: '0.8rem 1rem' }}>PAGAMENTO</th>
-              <th style={{ padding: '0.8rem 1rem' }}>STATUS ENTRADA</th>
-              <th style={{ padding: '0.8rem 1rem', textAlign: 'center' }}>AÇÃO</th>
-            </tr>
-          </thead>
-          <tbody>
-            {filteredTickets.length === 0 ? (
-              <tr>
-                <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.5)' }}>
-                  Nenhum ingresso encontrado para os filtros selecionados.
-                </td>
+      {/* Lista de Ingressos: Tabela para Telas Grandes / Cards Táteis para Mobile e Tablet */}
+      <div className="glass-panel" style={{ padding: '1.2rem', overflow: 'hidden' }}>
+        
+        {/* Visualização em Tabela (Apenas Desktop) */}
+        <div className="desktop-only" style={{ overflowX: 'auto', width: '100%' }}>
+          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
+            <thead>
+              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--primary)', fontSize: '0.85rem' }}>
+                <th style={{ padding: '0.8rem 1rem' }}>PARTICIPANTE</th>
+                <th style={{ padding: '0.8rem 1rem' }}>CPF / CONTATO</th>
+                <th style={{ padding: '0.8rem 1rem' }}>CREDENCIAL</th>
+                <th style={{ padding: '0.8rem 1rem' }}>PAGAMENTO</th>
+                <th style={{ padding: '0.8rem 1rem' }}>STATUS ENTRADA</th>
+                <th style={{ padding: '0.8rem 1rem', textAlign: 'center' }}>AÇÃO</th>
               </tr>
-            ) : (
-              filteredTickets.map((ticket) => (
-                <tr 
+            </thead>
+            <tbody>
+              {filteredTickets.length === 0 ? (
+                <tr>
+                  <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.5)' }}>
+                    Nenhum ingresso encontrado para os filtros selecionados.
+                  </td>
+                </tr>
+              ) : (
+                filteredTickets.map((ticket) => (
+                  <tr 
+                    key={ticket.id}
+                    style={{ 
+                      borderBottom: '1px solid rgba(255,255,255,0.05)',
+                      background: ticket.scanned ? 'rgba(74, 222, 128, 0.05)' : 'transparent',
+                      transition: 'background 0.2s'
+                    }}
+                  >
+                    {/* Participante */}
+                    <td style={{ padding: '1rem' }}>
+                      <strong style={{ fontSize: '1.05rem', color: '#fff', display: 'block' }}>
+                        {ticket.user.name}
+                      </strong>
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                        {ticket.user.email}
+                      </span>
+                    </td>
+
+                    {/* CPF / Contato */}
+                    <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)' }}>
+                      <div>{ticket.user.cpf}</div>
+                      {ticket.user.phone && (
+                        <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+                          {ticket.user.phone}
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Credencial */}
+                    <td style={{ padding: '1rem' }}>
+                      <code style={{ background: 'rgba(0,0,0,0.4)', padding: '0.2rem 0.5rem', borderRadius: '4px', color: 'var(--primary)', fontSize: '0.85rem' }}>
+                        #{ticket.id.substring(0, 8).toUpperCase()}
+                      </code>
+                    </td>
+
+                    {/* Status Pagamento */}
+                    <td style={{ padding: '1rem' }}>
+                      {ticket.status === 'PAID' ? (
+                        <span style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
+                          PAGO
+                        </span>
+                      ) : (
+                        <span style={{ background: 'rgba(223, 186, 82, 0.15)', color: 'var(--primary)', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
+                          AGUARDANDO
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Status Entrada */}
+                    <td style={{ padding: '1rem' }}>
+                      {ticket.scanned ? (
+                        <div className="flex items-center gap-2" style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 600 }}>
+                          <CheckCircle2 size={16} />
+                          Presente ({ticket.scannedAt ? new Date(ticket.scannedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'OK'})
+                        </div>
+                      ) : (
+                        <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>
+                          <Clock size={16} />
+                          Não Entrou
+                        </div>
+                      )}
+                    </td>
+
+                    {/* Ação Check-in Manual */}
+                    <td style={{ padding: '1rem', textAlign: 'center' }}>
+                      <button
+                        onClick={() => handleManualCheckin(ticket.id, ticket.scanned)}
+                        style={{
+                          background: ticket.scanned ? 'rgba(239, 68, 68, 0.15)' : (ticket.status === 'PAID' ? '#4ade80' : 'var(--primary)'),
+                          color: ticket.scanned ? '#f87171' : '#000',
+                          border: ticket.scanned ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
+                          padding: '0.5rem 1rem',
+                          borderRadius: '8px',
+                          fontSize: '0.85rem',
+                          fontWeight: 700,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        {ticket.scanned ? 'Desfazer Entrada' : (ticket.status === 'PAID' ? 'Confirmar Entrada' : 'Liberar Entrada')}
+                      </button>
+                    </td>
+                  </tr>
+                ))
+              )}
+            </tbody>
+          </table>
+        </div>
+
+        {/* Visualização em Cards Otimizada para Mobile e Tablet */}
+        <div className="mobile-cards-only" style={{ display: 'none' }}>
+          {filteredTickets.length === 0 ? (
+            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'rgba(255,255,255,0.5)' }}>
+              Nenhum ingresso encontrado para os filtros selecionados.
+            </div>
+          ) : (
+            <div className="flex flex-col gap-3">
+              {filteredTickets.map((ticket) => (
+                <div 
                   key={ticket.id}
-                  style={{ 
-                    borderBottom: '1px solid rgba(255,255,255,0.05)',
-                    background: ticket.scanned ? 'rgba(74, 222, 128, 0.05)' : 'transparent',
-                    transition: 'background 0.2s'
+                  style={{
+                    background: ticket.scanned ? 'rgba(74, 222, 128, 0.08)' : 'rgba(255, 255, 255, 0.03)',
+                    border: ticket.scanned ? '1px solid rgba(74, 222, 128, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)',
+                    borderRadius: '14px',
+                    padding: '1.1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.8rem'
                   }}
                 >
-                  {/* Participante */}
-                  <td style={{ padding: '1rem' }}>
-                    <strong style={{ fontSize: '1.05rem', color: '#fff', display: 'block' }}>
-                      {ticket.user.name}
-                    </strong>
-                    <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
-                      {ticket.user.email}
-                    </span>
-                  </td>
-
-                  {/* CPF / Contato */}
-                  <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)' }}>
-                    <div>{ticket.user.cpf}</div>
-                    {ticket.user.phone && (
-                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
-                        {ticket.user.phone}
+                  {/* Topo do Card: Nome e Badges de Status */}
+                  <div className="flex items-start justify-between gap-2">
+                    <div>
+                      <strong style={{ fontSize: '1.1rem', color: '#fff', display: 'block', lineHeight: 1.25 }}>
+                        {ticket.user.name}
+                      </strong>
+                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                        {ticket.user.email}
                       </span>
-                    )}
-                  </td>
+                    </div>
 
-                  {/* Credencial */}
-                  <td style={{ padding: '1rem' }}>
-                    <code style={{ background: 'rgba(0,0,0,0.4)', padding: '0.2rem 0.5rem', borderRadius: '4px', color: 'var(--primary)', fontSize: '0.85rem' }}>
-                      #{ticket.id.substring(0, 8).toUpperCase()}
-                    </code>
-                  </td>
+                    <div className="flex flex-col items-end gap-1" style={{ flexShrink: 0 }}>
+                      {ticket.status === 'PAID' ? (
+                        <span style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', padding: '0.2rem 0.6rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800 }}>
+                          PAGO
+                        </span>
+                      ) : (
+                        <span style={{ background: 'rgba(223, 186, 82, 0.15)', color: 'var(--primary)', padding: '0.2rem 0.6rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800 }}>
+                          AGUARDANDO
+                        </span>
+                      )}
+                      <code style={{ background: 'rgba(0,0,0,0.5)', padding: '0.15rem 0.4rem', borderRadius: '4px', color: 'var(--primary)', fontSize: '0.75rem' }}>
+                        #{ticket.id.substring(0, 8).toUpperCase()}
+                      </code>
+                    </div>
+                  </div>
 
-                  {/* Status Pagamento */}
-                  <td style={{ padding: '1rem' }}>
-                    {ticket.status === 'PAID' ? (
-                      <span style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
-                        PAGO
-                      </span>
-                    ) : (
-                      <span style={{ background: 'rgba(223, 186, 82, 0.15)', color: 'var(--primary)', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
-                        AGUARDANDO
-                      </span>
-                    )}
-                  </td>
+                  {/* Informações de Documento e Contato */}
+                  <div className="flex justify-between items-center" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.6rem' }}>
+                    <span>CPF: <strong>{ticket.user.cpf}</strong></span>
+                    {ticket.user.phone && <span style={{ color: 'rgba(255,255,255,0.6)' }}>{ticket.user.phone}</span>}
+                  </div>
 
-                  {/* Status Entrada */}
-                  <td style={{ padding: '1rem' }}>
-                    {ticket.scanned ? (
-                      <div className="flex items-center gap-2" style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 600 }}>
-                        <CheckCircle2 size={16} />
-                        Presente ({ticket.scannedAt ? new Date(ticket.scannedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'OK'})
-                      </div>
-                    ) : (
-                      <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>
-                        <Clock size={16} />
-                        Não Entrou
-                      </div>
-                    )}
-                  </td>
+                  {/* Rodapé do Card: Presença e Botão de Ação Tátil */}
+                  <div className="flex items-center justify-between gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.75rem' }}>
+                    <div style={{ flex: 1 }}>
+                      {ticket.scanned ? (
+                        <span className="flex items-center gap-1.5" style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 700 }}>
+                          <CheckCircle2 size={16} />
+                          Presente {ticket.scannedAt && `(${new Date(ticket.scannedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})`}
+                        </span>
+                      ) : (
+                        <span className="flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>
+                          <Clock size={16} />
+                          Não Entrou
+                        </span>
+                      )}
+                    </div>
 
-                  {/* Ação Check-in Manual */}
-                  <td style={{ padding: '1rem', textAlign: 'center' }}>
                     <button
                       onClick={() => handleManualCheckin(ticket.id, ticket.scanned)}
                       style={{
-                        background: ticket.scanned ? 'rgba(239, 68, 68, 0.15)' : (ticket.status === 'PAID' ? '#4ade80' : 'var(--primary)'),
+                        background: ticket.scanned ? 'rgba(239, 68, 68, 0.2)' : (ticket.status === 'PAID' ? '#4ade80' : 'var(--primary)'),
                         color: ticket.scanned ? '#f87171' : '#000',
-                        border: ticket.scanned ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
-                        padding: '0.4rem 0.8rem',
-                        borderRadius: '8px',
-                        fontSize: '0.8rem',
-                        fontWeight: 700,
-                        cursor: 'pointer'
+                        border: ticket.scanned ? '1px solid rgba(239, 68, 68, 0.4)' : 'none',
+                        padding: '0.65rem 1.1rem',
+                        borderRadius: '10px',
+                        fontSize: '0.85rem',
+                        fontWeight: 800,
+                        cursor: 'pointer',
+                        minHeight: '40px',
+                        whiteSpace: 'nowrap'
                       }}
                     >
                       {ticket.scanned ? 'Desfazer Entrada' : (ticket.status === 'PAID' ? 'Confirmar Entrada' : 'Liberar Entrada')}
                     </button>
-                  </td>
-                </tr>
-              ))
-            )}
-          </tbody>
-        </table>
+                  </div>
+                </div>
+              ))}
+            </div>
+          )}
+        </div>
+
       </div>
 
       {/* MODAL SCANNER DE QR CODE */}
       {scannerOpen && (
         <div style={{
           position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(0,0,0,0.85)', backdropFilter: 'blur(10px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '1rem'
+          background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(12px)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '0.75rem'
         }}>
-          <div className="glass-panel animate-scale-in flex flex-col items-center" style={{ width: '100%', maxWidth: '520px', position: 'relative', padding: '2rem' }}>
+          <div className="glass-panel animate-scale-in flex flex-col items-center" style={{ width: '100%', maxWidth: '480px', position: 'relative', padding: '1.5rem 1.2rem', maxHeight: '95vh', overflowY: 'auto' }}>
             
             {/* Fechar Modal */}
             <button 
               onClick={closeScannerModal}
-              style={{ position: 'absolute', top: '1.2rem', right: '1.2rem', background: 'transparent', border: 'none', color: '#fff', cursor: 'pointer' }}
+              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
             >
-              <X size={24} />
+              <X size={20} />
             </button>
 
-            <h2 style={{ fontSize: '1.6rem', color: '#fff', margin: '0 0 0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <QrCode color="var(--primary)" size={24} />
+            <h2 style={{ fontSize: '1.4rem', color: '#fff', margin: '0 0 0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+              <QrCode color="var(--primary)" size={22} />
               Validador de QR Code
             </h2>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: '1.5rem', textAlign: 'center' }}>
-              Aponte a câmera ou use o leitor/bipador USB na credencial do participante.
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', marginBottom: '1.2rem', textAlign: 'center' }}>
+              Aponte a câmera ou use o leitor USB na credencial do participante.
             </p>
 
             {/* Container da Câmera */}
@@ -658,8 +772,8 @@ export default function ValidadorPage() {
               ref={scannerContainerRef}
               style={{ 
                 width: '100%', 
-                maxWidth: '300px', 
-                height: cameraActive ? '300px' : '0px', 
+                maxWidth: '280px', 
+                height: cameraActive ? '280px' : '0px', 
                 overflow: 'hidden',
                 borderRadius: '16px',
                 marginBottom: cameraActive ? '1rem' : '0',
@@ -671,10 +785,10 @@ export default function ValidadorPage() {
               <button
                 onClick={startCamera}
                 className="btn-secondary"
-                style={{ display: 'flex', alignItems: 'center', gap: '0.5rem', padding: '0.8rem 1.5rem', marginBottom: '1.5rem' }}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem', marginBottom: '1.2rem', width: '100%', maxWidth: '280px' }}
               >
-                <Camera size={20} color="var(--primary)" />
-                Ativar Câmera do Dispositivo
+                <Camera size={18} color="var(--primary)" />
+                Ativar Câmera
               </button>
             ) : (
               <button
@@ -689,23 +803,23 @@ export default function ValidadorPage() {
             {/* Campo de Leitura para Bipador USB ou Digitação Manual */}
             <form 
               onSubmit={(e) => { e.preventDefault(); processScan(scanInput); }} 
-              style={{ width: '100%', marginBottom: '1.5rem' }}
+              style={{ width: '100%', marginBottom: '1.2rem' }}
             >
-              <div className="flex gap-2">
+              <div className="flex gap-2 mobile-col">
                 <input
                   ref={scanInputRef}
                   type="text"
-                  placeholder="Bipe com leitor USB ou digite o código..."
+                  placeholder="Bipar ou digitar código..."
                   value={scanInput}
                   onChange={(e) => setScanInput(e.target.value)}
                   className="input-field"
-                  style={{ fontSize: '0.95rem', padding: '0.8rem 1rem', flex: 1 }}
+                  style={{ fontSize: '0.9rem', padding: '0.75rem 0.9rem', flex: 1 }}
                 />
                 <button
                   type="submit"
                   disabled={scanLoading || !scanInput.trim()}
                   className="btn-primary"
-                  style={{ padding: '0.8rem 1.5rem' }}
+                  style={{ padding: '0.75rem 1.2rem', minHeight: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
                 >
                   {scanLoading ? 'Bipando...' : 'Confirmar'}
                 </button>

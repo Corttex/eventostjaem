@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import { PrismaClient } from '@prisma/client';
+import { getAsaasApiKey } from '@/lib/asaas';
 
 const prisma = new PrismaClient();
 
@@ -9,7 +10,7 @@ export async function GET(req: Request) {
     const paymentId = searchParams.get('paymentId');
     const ticketId = searchParams.get('ticketId');
 
-    const asaasApiKey = process.env.ASAAS_API_KEY;
+    const asaasApiKey = getAsaasApiKey();
     const asaasUrl = 'https://api.asaas.com/v3';
 
     let resolvedPaymentId = paymentId;

@@ -28,6 +28,7 @@ model Ticket {
   status        String   @default("PENDING") // PENDING, PAID, CANCELLED
   paymentMethod String?  // PIX, CREDIT_CARD, BOLETO
   amount        Float    @default(0) // Preço do ingresso
+  ticketType    String?  @default("VIP") // PADRAO ou VIP
   qrCodeToken   String   @unique @default(uuid())
   scanned       Boolean  @default(false)
   scannedAt     DateTime?

@@ -22,6 +22,7 @@ export default function SelecionarIngressosPage() {
   const [buyerPassword, setBuyerPassword] = useState('');
 
   // Quantidade e Participantes
+  const [ticketType, setTicketType] = useState<'VIP' | 'PADRAO'>('VIP');
   const [quantity, setQuantity] = useState(1);
   const [attendees, setAttendees] = useState<Attendee[]>([
     { name: '', email: '', cpf: '' }
@@ -29,7 +30,7 @@ export default function SelecionarIngressosPage() {
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD' | 'BOLETO'>('PIX');
   const [loading, setLoading] = useState(false);
 
-  const pricePerTicket = 150.00;
+  const pricePerTicket = ticketType === 'PADRAO' ? 150.00 : 349.00;
 
   // Carregar dados salvos da página anterior
   useEffect(() => {
@@ -42,6 +43,9 @@ export default function SelecionarIngressosPage() {
         setBuyerCpf(parsed.cpf || '');
         setBuyerPhone(parsed.phone || '');
         setBuyerPassword(parsed.password || '');
+        if (parsed.ticketType) {
+          setTicketType(parsed.ticketType);
+        }
 
         // Preenche o participante 1 por padrão
         setAttendees([
@@ -120,6 +124,7 @@ export default function SelecionarIngressosPage() {
           phone: buyerPhone,
           password: buyerPassword || 'Tjaem@2026'
         },
+        ticketType: ticketType,
         attendees: attendees,
         paymentMethod: paymentMethod
       };
@@ -174,24 +179,29 @@ export default function SelecionarIngressosPage() {
             <h1 className="gold-gradient-text" style={{ fontSize: '2.2rem', margin: '0.4rem 0 0.8rem', lineHeight: 1.2 }}>
               30 Anos da Lei de Arbitragem no Brasil
             </h1>
+            <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(223, 186, 82, 0.15)', padding: '0.3rem 0.8rem', borderRadius: '20px', border: '1px solid var(--primary)' }}>
+              <span style={{ fontSize: '0.85rem', color: '#ffeca8', fontWeight: 700 }}>
+                {ticketType === 'VIP' ? '★ Ingresso VIP + Kit Completo' : 'Ingresso Padrão'}
+              </span>
+            </div>
           </div>
           <div style={{ textAlign: 'right', minWidth: '160px' }}>
-            <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>Valor do Ingresso:</span>
+            <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>Valor Unitário:</span>
             <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
-              R$ 150,00 <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}>/ un.</span>
+              R$ {pricePerTicket.toFixed(2).replace('.', ',')} <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}>/ un.</span>
             </div>
           </div>
         </div>
 
-        <div className="flex gap-6 mobile-col" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.2rem' }}>
-          <div className="flex items-center gap-3">
-            <Calendar size={20} color="var(--primary)" />
+        <div className="flex gap-8 mobile-col" style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '1.2rem' }}>
+          <div className="flex items-center gap-4">
+            <Calendar size={22} color="var(--primary)" />
             <span style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.9)' }}>
-              20 de Outubro de 2026 • 09h às 17h
+              22 de Novembro de 2026 • 09h às 16h (6h totais c/ almoço)
             </span>
           </div>
-          <div className="flex items-center gap-3">
-            <MapPin size={20} color="var(--primary)" />
+          <div className="flex items-center gap-4">
+            <MapPin size={22} color="var(--primary)" />
             <span style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.9)' }}>
               SGAS quadra 603 Sul, L2 Sul — Asa Sul, Brasília / DF
             </span>
@@ -328,7 +338,7 @@ export default function SelecionarIngressosPage() {
 
           <div style={{ background: 'rgba(223, 186, 82, 0.08)', padding: '1rem 1.5rem', borderRadius: '10px', borderLeft: '4px solid var(--primary)', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
             <span style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.9)' }}>
-              Subtotal: <strong>{quantity}x</strong> R$ 150,00
+              Subtotal: <strong>{quantity}x</strong> R$ {pricePerTicket.toFixed(2).replace('.', ',')}
             </span>
             <span style={{ fontSize: '1.4rem', fontWeight: 700, color: 'var(--primary)' }}>
               R$ {total.toFixed(2).replace('.', ',')}
