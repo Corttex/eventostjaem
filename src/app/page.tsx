@@ -283,7 +283,10 @@ export default function Home() {
               display: 'flex',
               flexDirection: 'column',
               justifyContent: 'space-between',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              outline: 'none',
+              userSelect: 'none',
+              WebkitTapHighlightColor: 'transparent'
             }}
           >
             <div>
@@ -364,7 +367,10 @@ export default function Home() {
               flexDirection: 'column',
               justifyContent: 'space-between',
               position: 'relative',
-              transition: 'all 0.3s ease'
+              transition: 'all 0.3s ease',
+              outline: 'none',
+              userSelect: 'none',
+              WebkitTapHighlightColor: 'transparent'
             }}
           >
             <div>
@@ -585,14 +591,17 @@ export default function Home() {
                         display: 'flex',
                         alignItems: 'center',
                         justifyContent: 'center',
-                        boxShadow: activeKitIndex === idx ? '0 0 10px rgba(223, 186, 82, 0.35)' : 'none'
+                        boxShadow: activeKitIndex === idx ? '0 0 10px rgba(223, 186, 82, 0.35)' : 'none',
+                        outline: 'none',
+                        WebkitTapHighlightColor: 'transparent',
+                        userSelect: 'none'
                       }}
                       title={img.title}
                     >
                       <img 
                         src={img.src} 
                         alt={img.title} 
-                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '6px' }}
+                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '6px', pointerEvents: 'none' }}
                       />
                     </button>
                   ))}
@@ -775,8 +784,37 @@ export default function Home() {
                 </div>
               </div>
 
-              <button type="submit" className="btn-primary btn-full" style={{ padding: '1.1rem', fontSize: '1.1rem', marginTop: '0.5rem' }}>
-                Avançar para Selecionar Ingressos ({selectedTicketType === 'VIP' ? 'VIP - R$ 349,00' : 'Padrão - R$ 150,00'}) →
+              <button 
+                type="submit" 
+                className="btn-primary btn-full" 
+                style={{ 
+                  padding: '1.1rem 1.5rem', 
+                  fontSize: '1.05rem', 
+                  marginTop: '0.8rem',
+                  display: 'flex',
+                  flexDirection: 'column',
+                  gap: '0.35rem',
+                  lineHeight: 1.35,
+                  minHeight: 'auto',
+                  whiteSpace: 'normal',
+                  wordBreak: 'break-word'
+                }}
+              >
+                <span style={{ fontWeight: 800, letterSpacing: '0.5px' }}>
+                  Avançar para Selecionar Ingressos →
+                </span>
+                <span style={{ 
+                  fontSize: '0.85rem', 
+                  fontWeight: 600, 
+                  opacity: 0.9, 
+                  letterSpacing: '0.5px',
+                  background: 'rgba(0, 0, 0, 0.15)',
+                  padding: '0.2rem 0.8rem',
+                  borderRadius: '20px',
+                  display: 'inline-block'
+                }}>
+                  {selectedTicketType === 'VIP' ? '★ Ingresso VIP Completo • R$ 349,00' : '✓ Ingresso Padrão • R$ 150,00'}
+                </span>
               </button>
               <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.6rem' }}>
                 Na próxima etapa você define a quantidade e dados de cada participante.

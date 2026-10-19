@@ -38,6 +38,17 @@ body {
 
 * {
   box-sizing: inherit;
+  -webkit-tap-highlight-color: transparent;
+}
+
+*:focus:not(input):not(textarea):not(select) {
+  outline: none !important;
+}
+
+button:focus,
+div:focus {
+  outline: none !important;
+  box-shadow: none;
 }
 
 h1, h2, h3, h4, h5, h6 {
@@ -209,7 +220,8 @@ input:-webkit-autofill:active{
   letter-spacing: 1.2px;
   font-size: 1.05rem;
   width: 100%;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
 }
 
 @media (min-width: 768px) {
@@ -245,7 +257,8 @@ input:-webkit-autofill:active{
   text-transform: uppercase;
   letter-spacing: 1.2px;
   font-size: 1.05rem;
-  white-space: nowrap;
+  white-space: normal;
+  text-align: center;
 }
 
 .btn-secondary:hover {
