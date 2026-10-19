@@ -807,7 +807,7 @@ export default function Home() {
                 rel="noopener noreferrer" 
                 style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.7)', fontWeight: 500 }}
               >
-                Portal do Aluno / Membro
+                Portal Jurídico
               </a>
             </div>
           </div>
