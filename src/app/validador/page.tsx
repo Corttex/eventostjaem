@@ -3,61 +3,38 @@
 import { useState, useEffect, useRef } from 'react';
 import Link from 'next/link';
 import { 
-  QrCode, CheckCircle2, XCircle, AlertTriangle, Users, Ticket, 
-  Search, RefreshCw, LogOut, Camera, Calendar, MapPin, Check, 
-  ArrowLeft, Shield, Clock, Volume2, X
+  Camera, CheckCircle2, XCircle, AlertTriangle, ArrowLeft, 
+  Shield, Volume2, VolumeX, Keyboard, RefreshCw, Check, Clock
 } from 'lucide-react';
 
-interface TicketItem {
+interface RecentScan {
   id: string;
-  qrCodeToken: string;
-  status: string; // 'PAID' | 'PENDING'
-  paymentMethod: string;
-  amount: number;
-  scanned: boolean;
-  scannedAt: string | null;
-  createdAt: string;
-  user: {
-    name: string;
-    email: string;
-    cpf: string;
-    phone: string;
-  };
-}
-
-interface Stats {
-  total: number;
-  paid: number;
-  pending: number;
-  scanned: number;
+  name: string;
+  cpf: string;
+  time: string;
+  ticketType: string;
+  status: string;
 }
 
 export default function ValidadorPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [username, setUsername] = useState('');
-  const [password, setPassword] = useState('');
-  const [authError, setAuthError] = useState('');
+  const [pin, setPin] = useState('');
+  const [soundEnabled, setSoundEnabled] = useState(true);
 
-  // Dados da Lista
-  const [tickets, setTickets] = useState<TicketItem[]>([]);
-  const [stats, setStats] = useState<Stats>({ total: 0, paid: 0, pending: 0, scanned: 0 });
-  const [loading, setLoading] = useState(false);
-  const [search, setSearch] = useState('');
-  const [filter, setFilter] = useState<'ALL' | 'PAID' | 'PENDING' | 'SCANNED'>('ALL');
-
-  // Scanner Modal
-  const [scannerOpen, setScannerOpen] = useState(false);
-  const [scanInput, setScanInput] = useState('');
-  const [scanResult, setScanResult] = useState<any>(null);
-  const [scanLoading, setScanLoading] = useState(false);
+  // Scanner & Câmera State
   const [cameraActive, setCameraActive] = useState(false);
+  const [cameraError, setCameraError] = useState<string | null>(null);
+  const [manualCode, setManualCode] = useState('');
+  const [processing, setProcessing] = useState(false);
+  const [lastResult, setLastResult] = useState<any>(null);
+  const [recentScans, setRecentScans] = useState<RecentScan[]>([]);
 
-  const scanInputRef = useRef<HTMLInputElement>(null);
-  const scannerContainerRef = useRef<HTMLDivElement>(null);
   const html5QrCodeRef = useRef<any>(null);
+  const manualInputRef = useRef<HTMLInputElement>(null);
 
-  // Som de Bip usando AudioContext nativo
-  const playBeep = (type: 'success' | 'warning' | 'error') => {
+  // Som de Validação
+  const playAudioTone = (type: 'success' | 'warning' | 'error') => {
+    if (!soundEnabled) return;
     try {
       const audioCtx = new (window.AudioContext || (window as any).webkitAudioContext)();
       const osc = audioCtx.createOscillator();
@@ -67,813 +44,587 @@ export default function ValidadorPage() {
       gain.connect(audioCtx.destination);
 
       if (type === 'success') {
-        osc.frequency.setValueAtTime(800, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(600, audioCtx.currentTime);
         osc.frequency.exponentialRampToValueAtTime(1200, audioCtx.currentTime + 0.15);
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         gain.gain.exponentialRampToValueAtTime(0.01, audioCtx.currentTime + 0.2);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.2);
       } else if (type === 'warning') {
-        osc.frequency.setValueAtTime(500, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(450, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.3, audioCtx.currentTime);
         osc.start();
-        osc.stop(audioCtx.currentTime + 0.3);
+        osc.stop(audioCtx.currentTime + 0.35);
       } else {
-        osc.frequency.setValueAtTime(250, audioCtx.currentTime);
+        osc.frequency.setValueAtTime(200, audioCtx.currentTime);
         gain.gain.setValueAtTime(0.4, audioCtx.currentTime);
         osc.start();
         osc.stop(audioCtx.currentTime + 0.4);
       }
     } catch (e) {
-      console.warn('AudioContext error:', e);
+      console.warn('Audio tone error:', e);
     }
   };
 
   useEffect(() => {
     const isAuth = sessionStorage.getItem('validador_auth');
-    if (isAuth === 'master') {
+    if (isAuth === 'true') {
       setIsAuthenticated(true);
-      fetchTickets();
     }
   }, []);
 
   const handleLogin = (e: React.FormEvent) => {
     e.preventDefault();
-    if (username.trim() === 'master' && password.trim() === '807522') {
-      sessionStorage.setItem('validador_auth', 'master');
+    if (pin.trim() === '807522' || pin.trim() === '222222') {
+      sessionStorage.setItem('validador_auth', 'true');
       setIsAuthenticated(true);
-      setAuthError('');
-      fetchTickets();
     } else {
-      setAuthError('Usuário ou senha inválidos. Utilize o acesso master.');
+      alert('PIN Incorreto. Utilize o PIN de portaria (807522 ou 222222).');
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('validador_auth');
-    setIsAuthenticated(false);
-  };
+  // Inicializar Leitor de Câmera
+  useEffect(() => {
+    if (!isAuthenticated) return;
 
-  const fetchTickets = async () => {
-    setLoading(true);
-    try {
-      const res = await fetch('/api/validador/tickets');
-      if (res.ok) {
-        const data = await res.json();
-        setTickets(data.tickets || []);
-        if (data.stats) setStats(data.stats);
+    let qrScanner: any = null;
+
+    const startScanner = async () => {
+      try {
+        const { Html5Qrcode } = await import('html5-qrcode');
+        qrScanner = new Html5Qrcode('qr-reader-live');
+        html5QrCodeRef.current = qrScanner;
+
+        await qrScanner.start(
+          { facingMode: 'environment' },
+          {
+            fps: 10,
+            qrbox: { width: 260, height: 260 },
+            aspectRatio: 1.0
+          },
+          (decodedText: string) => {
+            handleScanToken(decodedText);
+          },
+          () => {
+            // scan callback silencioso
+          }
+        );
+        setCameraActive(true);
+        setCameraError(null);
+      } catch (err: any) {
+        console.warn('Falha ao iniciar câmera automática:', err);
+        setCameraActive(false);
+        setCameraError('Câmera indisponível ou permissão pendente. Utilize a digitação manual abaixo.');
       }
-    } catch (err) {
-      console.error('Erro ao buscar ingressos:', err);
-    } finally {
-      setLoading(false);
-    }
-  };
+    };
 
-  // Função para processar leitura de QR Code
-  const processScan = async (token: string, force = false) => {
-    if (!token?.trim()) return;
-    setScanLoading(true);
+    startScanner();
+
+    return () => {
+      if (html5QrCodeRef.current) {
+        try {
+          html5QrCodeRef.current.stop().catch(() => {});
+        } catch (e) {}
+      }
+    };
+  }, [isAuthenticated]);
+
+  // Função central para processar Token/Código QR
+  const handleScanToken = async (token: string, forceConfirm: boolean = false) => {
+    if (processing) return;
+    setProcessing(true);
 
     try {
       const res = await fetch('/api/validador/scan', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ token: token.trim(), forceConfirm: force })
+        body: JSON.stringify({ token: token.trim(), forceConfirm })
       });
 
       const data = await res.json();
 
       if (res.ok && data.success) {
-        playBeep('success');
-        setScanResult({
-          type: 'success',
-          title: 'Entrada Autorizada!',
-          message: data.message,
-          ticket: data.ticket
-        });
-        // Atualiza a lista na hora
-        fetchTickets();
-      } else if (res.status === 402) {
-        // Pendente de pagamento
-        playBeep('warning');
-        setScanResult({
-          type: 'warning',
-          title: 'Pagamento Pendente!',
-          message: data.error,
+        playAudioTone('success');
+        setLastResult({
+          type: 'SUCCESS',
           ticket: data.ticket,
-          canForce: true
+          message: 'Entrada Autorizada com Sucesso!'
         });
-      } else if (res.status === 409) {
-        // Já utilizado
-        playBeep('error');
-        setScanResult({
-          type: 'error',
-          title: 'Ingresso Já Utilizado!',
-          message: data.error,
-          ticket: data.ticket
+
+        // Adicionar aos últimos check-ins
+        setRecentScans(prev => [
+          {
+            id: data.ticket.id,
+            name: data.ticket.name,
+            cpf: data.ticket.cpf,
+            ticketType: data.ticket.ticketType || 'VIP',
+            time: new Date().toLocaleTimeString('pt-BR'),
+            status: 'AUTORIZADO'
+          },
+          ...prev.slice(0, 7)
+        ]);
+
+        setManualCode('');
+      } else if (data.alreadyScanned) {
+        playAudioTone('error');
+        setLastResult({
+          type: 'ALREADY_SCANNED',
+          ticket: data.ticket,
+          message: data.error || 'Ingresso já utilizado anteriormente!'
+        });
+      } else if (data.isPending) {
+        playAudioTone('warning');
+        setLastResult({
+          type: 'PENDING',
+          ticket: data.ticket,
+          token: token.trim(),
+          message: 'Pagamento pendente no sistema. Liberar manualmente?'
         });
       } else {
-        // Não encontrado
-        playBeep('error');
-        setScanResult({
-          type: 'error',
-          title: 'Código Inválido',
-          message: data.error || 'Ingresso não encontrado no sistema.'
+        playAudioTone('error');
+        setLastResult({
+          type: 'ERROR',
+          message: data.error || 'Ingresso inválido ou não encontrado!'
         });
       }
-    } catch (err) {
-      playBeep('error');
-      setScanResult({
-        type: 'error',
-        title: 'Erro de Conexão',
-        message: 'Falha ao comunicar com o servidor.'
+    } catch (err: any) {
+      playAudioTone('error');
+      setLastResult({
+        type: 'ERROR',
+        message: 'Falha de comunicação com o servidor de validação.'
       });
     } finally {
-      setScanLoading(false);
-      setScanInput('');
-      if (scanInputRef.current) scanInputRef.current.focus();
+      setProcessing(false);
+      setTimeout(() => {
+        manualInputRef.current?.focus();
+      }, 300);
     }
   };
 
-  // Check-in manual direto na lista
-  const handleManualCheckin = async (ticketId: string, currentScanned: boolean) => {
-    try {
-      const res = await fetch('/api/validador/manual-checkin', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ ticketId, toggle: true })
-      });
-      if (res.ok) {
-        playBeep('success');
-        fetchTickets();
-      }
-    } catch (err) {
-      console.error(err);
-    }
+  const handleManualSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!manualCode.trim()) return;
+    handleScanToken(manualCode);
   };
 
-  // Inicializar câmera com html5-qrcode
-  const startCamera = async () => {
-    try {
-      const { Html5Qrcode } = await import('html5-qrcode');
-      if (html5QrCodeRef.current) {
-        await html5QrCodeRef.current.stop().catch(() => {});
-      }
-
-      const html5QrCode = new Html5Qrcode('qr-reader-container');
-      html5QrCodeRef.current = html5QrCode;
-
-      await html5QrCode.start(
-        { facingMode: 'environment' },
-        { fps: 10, qrbox: { width: 250, height: 250 } },
-        (decodedText) => {
-          processScan(decodedText);
-        },
-        () => {}
-      );
-      setCameraActive(true);
-    } catch (err) {
-      console.warn('Erro ao inicializar câmera:', err);
-      alert('Não foi possível acessar a câmera. Você pode usar a entrada por digitação ou bipador USB.');
-    }
-  };
-
-  const stopCamera = async () => {
-    if (html5QrCodeRef.current) {
-      await html5QrCodeRef.current.stop().catch(() => {});
-      html5QrCodeRef.current = null;
-    }
-    setCameraActive(false);
-  };
-
-  const openScannerModal = () => {
-    setScannerOpen(true);
-    setScanResult(null);
-    setTimeout(() => {
-      if (scanInputRef.current) scanInputRef.current.focus();
-    }, 100);
-  };
-
-  const closeScannerModal = () => {
-    stopCamera();
-    setScannerOpen(false);
-  };
-
-  // Filtro de Ingressos
-  const filteredTickets = tickets.filter(t => {
-    // Filtro por status
-    if (filter === 'PAID' && t.status !== 'PAID') return false;
-    if (filter === 'PENDING' && t.status !== 'PENDING') return false;
-    if (filter === 'SCANNED' && !t.scanned) return false;
-
-    // Filtro por busca
-    if (search.trim()) {
-      const q = search.toLowerCase();
-      const matchName = t.user.name.toLowerCase().includes(q);
-      const matchCpf = t.user.cpf.includes(q);
-      const matchEmail = t.user.email.toLowerCase().includes(q);
-      const matchId = t.id.toLowerCase().includes(q);
-      return matchName || matchCpf || matchEmail || matchId;
-    }
-
-    return true;
-  });
-
-  // TELA DE LOGIN DO VALIDADOR
+  // TELA DE AUTENTICAÇÃO PIN PORTARIA
   if (!isAuthenticated) {
     return (
       <main className="container flex items-center justify-center animate-fade-in" style={{ minHeight: '85vh', padding: '2rem' }}>
         <form onSubmit={handleLogin} className="glass-panel text-center flex flex-col gap-5" style={{ maxWidth: '420px', width: '100%', padding: '2.5rem' }}>
-          <div style={{ margin: '0 auto', background: 'rgba(223, 186, 82, 0.1)', padding: '1rem', borderRadius: '50%', width: '70px', height: '70px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-            <Shield size={36} color="var(--primary)" />
+          <div style={{ margin: '0 auto', background: 'rgba(223, 186, 82, 0.12)', padding: '1.2rem', borderRadius: '50%', width: '75px', height: '75px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+            <Shield size={38} color="var(--primary)" />
           </div>
 
           <div>
-            <h1 style={{ fontSize: '1.8rem', color: '#fff', margin: '0 0 0.5rem' }}>Portaria & Validador</h1>
+            <h1 style={{ fontSize: '1.8rem', color: '#fff', margin: '0 0 0.5rem' }}>Validador de Portaria</h1>
             <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', margin: 0 }}>
-              Acesso exclusivo para conferência e check-in de credenciais
+              Leitura de QR Code e credenciamento oficial em tempo real
             </p>
           </div>
 
-          {authError && (
-            <div style={{ background: 'rgba(239, 68, 68, 0.15)', border: '1px solid #ef4444', color: '#fca5a5', padding: '0.8rem', borderRadius: '8px', fontSize: '0.9rem' }}>
-              {authError}
-            </div>
-          )}
-
-          <div style={{ textAlign: 'left' }}>
-            <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.3rem', display: 'block' }}>Usuário</label>
-            <input 
-              type="text" 
-              value={username}
-              onChange={(e) => setUsername(e.target.value)}
-              placeholder="Ex: master" 
-              className="input-field" 
-              required 
-            />
-          </div>
-
-          <div style={{ textAlign: 'left' }}>
-            <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.3rem', display: 'block' }}>Senha / PIN</label>
+          <div style={{ textAlign: 'center' }}>
+            <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.5rem', display: 'block' }}>PIN de Portaria</label>
             <input 
               type="password" 
-              value={password}
-              onChange={(e) => setPassword(e.target.value)}
-              placeholder="Digite o PIN de acesso" 
-              className="input-field" 
+              value={pin}
+              onChange={(e) => setPin(e.target.value)}
+              placeholder="••••••" 
+              className="input-field text-center" 
+              style={{ fontSize: '1.8rem', letterSpacing: '6px', fontWeight: 700 }}
+              maxLength={6}
               required 
             />
           </div>
 
-          <button type="submit" className="btn-primary" style={{ marginTop: '0.5rem', padding: '1rem' }}>
-            Entrar no Painel do Validador
+          <button type="submit" className="btn-primary" style={{ marginTop: '0.5rem', padding: '1rem', fontSize: '1.05rem' }}>
+            Entrar na Recepção
           </button>
 
           <Link href="/" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>
-            ← Voltar para o site do evento
+            ← Voltar para o portal do evento
           </Link>
         </form>
       </main>
     );
   }
 
-  // PAINEL COMPLETO DO VALIDADOR
+  // TELA PRINCIPAL DO VALIDADOR (Fiel à imagem de referência da portaria)
   return (
-    <main className="container animate-fade-in" style={{ padding: '2.5rem 1rem 6rem', maxWidth: '1100px' }}>
+    <main className="animate-fade-in" style={{ padding: '1.5rem 2.5rem 5rem', width: '100%', maxWidth: '100%', boxSizing: 'border-box' }}>
       
-      {/* Topo com Identificação do Evento e Ações */}
-      <div className="flex items-center justify-between tablet-col gap-4" style={{ marginBottom: '1.8rem' }}>
+      {/* Barra de Navegação Superior */}
+      <div className="flex items-center justify-between" style={{ marginBottom: '1.5rem', fontSize: '0.9rem' }}>
+        <Link href="/admin" style={{ color: 'rgba(255,255,255,0.6)', display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
+          <ArrowLeft size={16} /> Painel Administrativo
+        </Link>
+        <div className="flex items-center gap-3">
+          <button 
+            onClick={() => setSoundEnabled(!soundEnabled)}
+            style={{ 
+              background: 'rgba(255,255,255,0.08)', 
+              border: '1px solid rgba(255,255,255,0.15)', 
+              color: soundEnabled ? 'var(--primary)' : 'rgba(255,255,255,0.4)', 
+              padding: '0.4rem 0.8rem', 
+              borderRadius: '8px', 
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '0.4rem',
+              fontSize: '0.85rem'
+            }}
+          >
+            {soundEnabled ? <Volume2 size={16} /> : <VolumeX size={16} />}
+            {soundEnabled ? 'Bip Ativo' : 'Mudo'}
+          </button>
+
+          <button 
+            onClick={() => {
+              sessionStorage.removeItem('validador_auth');
+              setIsAuthenticated(false);
+            }}
+            style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '0.85rem' }}
+          >
+            Sair
+          </button>
+        </div>
+      </div>
+
+      {/* Topo com Título Portaria e Posto de Acesso */}
+      <div className="flex items-center justify-between tablet-col gap-4" style={{ marginBottom: '2rem' }}>
         <div>
-          <span style={{ fontSize: '0.8rem', color: 'var(--primary)', textTransform: 'uppercase', letterSpacing: '2px', fontWeight: 700 }}>
-            Painel Oficial do Validador
-          </span>
-          <h1 className="gold-gradient-text" style={{ fontSize: '2.2rem', margin: '0.2rem 0 0.5rem', lineHeight: 1.2 }}>
-            30 Anos da Lei de Arbitragem no Brasil
-          </h1>
-          <div className="flex gap-4 tablet-col" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>
-            <span className="flex items-center gap-2">
-              <Calendar size={16} color="var(--primary)" /> 22 de Novembro de 2026 • 09h às 16h
-            </span>
-            <span className="flex items-center gap-2">
-              <MapPin size={16} color="var(--primary)" /> Asa Sul, Brasília / DF
+          <div style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'rgba(223, 186, 82, 0.85)', fontWeight: 700, marginBottom: '0.2rem' }}>
+            PORTARIA & RECEPÇÃO • 30 ANOS DA LEI DE ARBITRAGEM
+          </div>
+          <div className="flex items-center gap-3 flex-wrap">
+            <h1 className="gold-gradient-text" style={{ fontSize: '2.4rem', margin: 0, lineHeight: 1.15 }}>
+              Validador de Ingressos
+            </h1>
+            <span style={{ 
+              background: 'rgba(74, 222, 128, 0.15)', 
+              border: '1px solid #4ade80', 
+              color: '#4ade80', 
+              fontSize: '0.8rem', 
+              fontWeight: 700, 
+              padding: '0.25rem 0.75rem', 
+              borderRadius: '20px' 
+            }}>
+              Online (PIN 807522)
             </span>
           </div>
         </div>
 
-        <div className="flex gap-2 items-center mobile-col" style={{ width: 'auto' }}>
-          <button 
-            onClick={openScannerModal}
-            className="btn-primary"
+        {/* Status Câmera & Posto */}
+        <div className="flex gap-4 items-center">
+          <div style={{ 
+            background: cameraActive ? 'rgba(74, 222, 128, 0.15)' : 'rgba(255,255,255,0.06)', 
+            border: cameraActive ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.15)',
+            color: cameraActive ? '#4ade80' : 'rgba(255,255,255,0.7)',
+            padding: '0.6rem 1.2rem',
+            borderRadius: '10px',
+            fontSize: '0.9rem',
+            fontWeight: 700,
+            display: 'flex',
+            alignItems: 'center',
+            gap: '0.5rem'
+          }}>
+            <Camera size={18} /> {cameraActive ? 'Câmera Ativa' : 'Câmera Desligada'}
+          </div>
+
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontSize: '0.7rem', textTransform: 'uppercase', color: 'rgba(255,255,255,0.5)', letterSpacing: '1px' }}>
+              POSTO DE ACESSO
+            </div>
+            <div style={{ fontSize: '0.95rem', fontWeight: 700, color: '#fff' }}>
+              Portaria Principal A
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Grid Principal: Leitor de QR Code / Câmera (Esquerda) + Últimos Check-ins (Direita) */}
+      <div className="grid grid-cols-2 gap-6 tablet-col" style={{ marginBottom: '2rem' }}>
+        
+        {/* Painel da Câmera / Auto-Scan */}
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: '1rem' }}>
+            <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: '#4ade80', fontWeight: 800 }}>
+              CÂMERA ATIVA • APONTE PARA O QR CODE DO INGRESSO
+            </span>
+            <span style={{ fontSize: '0.75rem', background: 'rgba(255,255,255,0.08)', padding: '0.2rem 0.6rem', borderRadius: '4px', color: 'rgba(255,255,255,0.7)' }}>
+              AUTO-SCAN
+            </span>
+          </div>
+
+          {/* Viewfinder da Câmera */}
+          <div 
             style={{ 
-              padding: '0.85rem 1.4rem', 
-              fontSize: '1rem', 
+              width: '100%', 
+              minHeight: '340px', 
+              background: '#02040a', 
+              borderRadius: '14px', 
+              border: cameraActive ? '2px solid rgba(74, 222, 128, 0.4)' : '1px solid rgba(255,255,255,0.1)', 
+              overflow: 'hidden', 
               display: 'flex', 
               alignItems: 'center', 
               justifyContent: 'center',
-              gap: '0.5rem',
-              boxShadow: '0 0 25px rgba(223, 186, 82, 0.35)',
-              minHeight: '44px'
+              position: 'relative',
+              boxShadow: cameraActive ? '0 0 25px rgba(74, 222, 128, 0.15)' : 'none'
             }}
           >
-            <QrCode size={20} />
-            Escanear QR Code
-          </button>
+            <div id="qr-reader-live" style={{ width: '100%', height: '100%' }}></div>
 
-          <button 
-            onClick={handleLogout}
-            className="btn-secondary"
-            style={{ padding: '0.85rem 1rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.4rem', color: 'rgba(255,255,255,0.7)', minHeight: '44px' }}
-            title="Sair do Validador"
-          >
-            <LogOut size={18} />
-            <span className="hidden-mobile">Sair</span>
-          </button>
-        </div>
-      </div>
+            {/* Alerta de erro da câmera se houver */}
+            {cameraError && (
+              <div style={{ position: 'absolute', padding: '1.5rem', textAlign: 'center', color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem' }}>
+                <Camera size={42} style={{ margin: '0 auto 0.8rem', opacity: 0.4 }} />
+                <p style={{ margin: 0 }}>{cameraError}</p>
+              </div>
+            )}
 
-      {/* Cards de Métricas em Tempo Real */}
-      <div className="grid grid-cols-4 gap-3" style={{ marginBottom: '1.8rem' }}>
-        <div className="glass-panel" style={{ padding: '1.2rem 1rem', textAlign: 'center' }}>
-          <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>Total Inscrições</span>
-          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#fff', marginTop: '0.2rem', lineHeight: 1.1 }}>
-            {stats.total}
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '1.2rem 1rem', textAlign: 'center', borderBottom: '3px solid #4ade80' }}>
-          <span style={{ fontSize: '0.75rem', color: '#4ade80', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Confirmados</span>
-          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#4ade80', marginTop: '0.2rem', lineHeight: 1.1 }}>
-            {stats.paid}
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '1.2rem 1rem', textAlign: 'center', borderBottom: '3px solid var(--primary)' }}>
-          <span style={{ fontSize: '0.75rem', color: 'var(--primary)', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Aguardando</span>
-          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--primary)', marginTop: '0.2rem', lineHeight: 1.1 }}>
-            {stats.pending}
-          </div>
-        </div>
-
-        <div className="glass-panel" style={{ padding: '1.2rem 1rem', textAlign: 'center', borderBottom: '3px solid #60a5fa' }}>
-          <span style={{ fontSize: '0.75rem', color: '#60a5fa', textTransform: 'uppercase', fontWeight: 700, letterSpacing: '0.5px' }}>Check-ins</span>
-          <div style={{ fontSize: '2.1rem', fontWeight: 800, color: '#60a5fa', marginTop: '0.2rem', lineHeight: 1.1 }}>
-            {stats.scanned} <span style={{ fontSize: '0.9rem', fontWeight: 500, color: 'rgba(255,255,255,0.6)' }}>/ {stats.paid}</span>
-          </div>
-        </div>
-      </div>
-
-      {/* Barra de Filtros e Busca */}
-      <div className="glass-panel" style={{ padding: '1rem', marginBottom: '1.5rem' }}>
-        <div className="flex items-center justify-between tablet-col gap-3">
-          
-          {/* Abas de Filtro com Scroll Horizontal no Celular */}
-          <div 
-            className="flex gap-2" 
-            style={{ 
-              overflowX: 'auto', 
-              maxWidth: '100%', 
-              paddingBottom: '4px',
-              scrollbarWidth: 'none',
-              WebkitOverflowScrolling: 'touch'
-            }}
-          >
-            <button
-              onClick={() => setFilter('ALL')}
-              style={{
-                background: filter === 'ALL' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                color: filter === 'ALL' ? '#000' : '#fff',
-                border: 'none',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Todos ({stats.total})
-            </button>
-            <button
-              onClick={() => setFilter('PAID')}
-              style={{
-                background: filter === 'PAID' ? '#4ade80' : 'rgba(255,255,255,0.05)',
-                color: filter === 'PAID' ? '#000' : '#fff',
-                border: 'none',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Pagos ({stats.paid})
-            </button>
-            <button
-              onClick={() => setFilter('PENDING')}
-              style={{
-                background: filter === 'PENDING' ? 'var(--primary)' : 'rgba(255,255,255,0.05)',
-                color: filter === 'PENDING' ? '#000' : '#fff',
-                border: 'none',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Aguardando ({stats.pending})
-            </button>
-            <button
-              onClick={() => setFilter('SCANNED')}
-              style={{
-                background: filter === 'SCANNED' ? '#60a5fa' : 'rgba(255,255,255,0.05)',
-                color: filter === 'SCANNED' ? '#000' : '#fff',
-                border: 'none',
-                padding: '0.5rem 0.9rem',
-                borderRadius: '8px',
-                fontWeight: 700,
-                fontSize: '0.85rem',
-                cursor: 'pointer',
-                whiteSpace: 'nowrap'
-              }}
-            >
-              Presentes ({stats.scanned})
-            </button>
-          </div>
-
-          {/* Campo de Busca e Botão Atualizar */}
-          <div className="flex gap-2 items-center" style={{ width: '100%', maxWidth: '420px' }}>
-            <div style={{ position: 'relative', width: '100%' }}>
-              <Search size={18} color="rgba(255,255,255,0.5)" style={{ position: 'absolute', left: '12px', top: '50%', transform: 'translateY(-50%)' }} />
-              <input
-                type="text"
-                placeholder="Buscar por nome, CPF ou credencial..."
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-                className="input-field"
-                style={{ paddingLeft: '2.4rem', fontSize: '0.9rem', padding: '0.65rem 0.8rem 0.65rem 2.4rem', width: '100%' }}
+            {/* Linha de Scanner Animada */}
+            {cameraActive && (
+              <div 
+                style={{
+                  position: 'absolute',
+                  top: '10%',
+                  left: '10%',
+                  right: '10%',
+                  height: '2px',
+                  background: 'linear-gradient(90deg, transparent, #4ade80, transparent)',
+                  boxShadow: '0 0 12px #4ade80',
+                  animation: 'pulse 1.8s infinite ease-in-out',
+                  pointerEvents: 'none'
+                }}
               />
-            </div>
+            )}
+          </div>
+        </div>
 
-            <button
-              onClick={fetchTickets}
-              disabled={loading}
-              className="btn-secondary"
-              style={{ padding: '0.65rem 0.85rem', minWidth: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-              title="Atualizar lista em tempo real"
-            >
-              <RefreshCw size={18} className={loading ? 'animate-spin' : ''} />
-            </button>
+        {/* Painel de Últimos Check-ins na Portaria */}
+        <div className="glass-panel" style={{ padding: '1.5rem', display: 'flex', flexDirection: 'column' }}>
+          <div className="flex items-center justify-between" style={{ marginBottom: '1.2rem', paddingBottom: '0.8rem', borderBottom: '1px solid rgba(255,255,255,0.08)' }}>
+            <div className="flex items-center gap-2">
+              <Clock size={18} color="var(--primary)" />
+              <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, color: '#fff' }}>
+                ÚLTIMOS CHECK-INS NA PORTARIA
+              </span>
+            </div>
+            <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
+              {recentScans.length} leituras
+            </span>
           </div>
 
-        </div>
-      </div>
-
-      {/* Lista de Ingressos: Tabela para Telas Grandes / Cards Táteis para Mobile e Tablet */}
-      <div className="glass-panel" style={{ padding: '1.2rem', overflow: 'hidden' }}>
-        
-        {/* Visualização em Tabela (Apenas Desktop) */}
-        <div className="desktop-only" style={{ overflowX: 'auto', width: '100%' }}>
-          <table style={{ width: '100%', borderCollapse: 'collapse', textAlign: 'left', minWidth: '700px' }}>
-            <thead>
-              <tr style={{ borderBottom: '1px solid rgba(255,255,255,0.1)', color: 'var(--primary)', fontSize: '0.85rem' }}>
-                <th style={{ padding: '0.8rem 1rem' }}>PARTICIPANTE</th>
-                <th style={{ padding: '0.8rem 1rem' }}>CPF / CONTATO</th>
-                <th style={{ padding: '0.8rem 1rem' }}>CREDENCIAL</th>
-                <th style={{ padding: '0.8rem 1rem' }}>PAGAMENTO</th>
-                <th style={{ padding: '0.8rem 1rem' }}>STATUS ENTRADA</th>
-                <th style={{ padding: '0.8rem 1rem', textAlign: 'center' }}>AÇÃO</th>
-              </tr>
-            </thead>
-            <tbody>
-              {filteredTickets.length === 0 ? (
-                <tr>
-                  <td colSpan={6} style={{ textAlign: 'center', padding: '3rem', color: 'rgba(255,255,255,0.5)' }}>
-                    Nenhum ingresso encontrado para os filtros selecionados.
-                  </td>
-                </tr>
-              ) : (
-                filteredTickets.map((ticket) => (
-                  <tr 
-                    key={ticket.id}
-                    style={{ 
-                      borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      background: ticket.scanned ? 'rgba(74, 222, 128, 0.05)' : 'transparent',
-                      transition: 'background 0.2s'
-                    }}
-                  >
-                    {/* Participante */}
-                    <td style={{ padding: '1rem' }}>
-                      <strong style={{ fontSize: '1.05rem', color: '#fff', display: 'block' }}>
-                        {ticket.user.name}
-                      </strong>
-                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
-                        {ticket.user.email}
-                      </span>
-                    </td>
-
-                    {/* CPF / Contato */}
-                    <td style={{ padding: '1rem', fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)' }}>
-                      <div>{ticket.user.cpf}</div>
-                      {ticket.user.phone && (
-                        <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
-                          {ticket.user.phone}
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Credencial */}
-                    <td style={{ padding: '1rem' }}>
-                      <code style={{ background: 'rgba(0,0,0,0.4)', padding: '0.2rem 0.5rem', borderRadius: '4px', color: 'var(--primary)', fontSize: '0.85rem' }}>
-                        #{ticket.id.substring(0, 8).toUpperCase()}
-                      </code>
-                    </td>
-
-                    {/* Status Pagamento */}
-                    <td style={{ padding: '1rem' }}>
-                      {ticket.status === 'PAID' ? (
-                        <span style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
-                          PAGO
-                        </span>
-                      ) : (
-                        <span style={{ background: 'rgba(223, 186, 82, 0.15)', color: 'var(--primary)', padding: '0.25rem 0.7rem', borderRadius: '12px', fontSize: '0.8rem', fontWeight: 700 }}>
-                          AGUARDANDO
-                        </span>
-                      )}
-                    </td>
-
-                    {/* Status Entrada */}
-                    <td style={{ padding: '1rem' }}>
-                      {ticket.scanned ? (
-                        <div className="flex items-center gap-2" style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 600 }}>
-                          <CheckCircle2 size={16} />
-                          Presente ({ticket.scannedAt ? new Date(ticket.scannedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' }) : 'OK'})
-                        </div>
-                      ) : (
-                        <div className="flex items-center gap-2" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>
-                          <Clock size={16} />
-                          Não Entrou
-                        </div>
-                      )}
-                    </td>
-
-                    {/* Ação Check-in Manual */}
-                    <td style={{ padding: '1rem', textAlign: 'center' }}>
-                      <button
-                        onClick={() => handleManualCheckin(ticket.id, ticket.scanned)}
-                        style={{
-                          background: ticket.scanned ? 'rgba(239, 68, 68, 0.15)' : (ticket.status === 'PAID' ? '#4ade80' : 'var(--primary)'),
-                          color: ticket.scanned ? '#f87171' : '#000',
-                          border: ticket.scanned ? '1px solid rgba(239, 68, 68, 0.3)' : 'none',
-                          padding: '0.5rem 1rem',
-                          borderRadius: '8px',
-                          fontSize: '0.85rem',
-                          fontWeight: 700,
-                          cursor: 'pointer'
-                        }}
-                      >
-                        {ticket.scanned ? 'Desfazer Entrada' : (ticket.status === 'PAID' ? 'Confirmar Entrada' : 'Liberar Entrada')}
-                      </button>
-                    </td>
-                  </tr>
-                ))
-              )}
-            </tbody>
-          </table>
-        </div>
-
-        {/* Visualização em Cards Otimizada para Mobile e Tablet */}
-        <div className="mobile-cards-only" style={{ display: 'none' }}>
-          {filteredTickets.length === 0 ? (
-            <div style={{ textAlign: 'center', padding: '2.5rem 1rem', color: 'rgba(255,255,255,0.5)' }}>
-              Nenhum ingresso encontrado para os filtros selecionados.
-            </div>
-          ) : (
-            <div className="flex flex-col gap-3">
-              {filteredTickets.map((ticket) => (
+          <div style={{ flex: 1, display: 'flex', flexDirection: 'column', gap: '0.65rem', overflowY: 'auto', maxHeight: '350px' }}>
+            {recentScans.length === 0 ? (
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', flex: 1, minHeight: '200px', color: 'rgba(255,255,255,0.4)', fontSize: '0.9rem', textAlign: 'center' }}>
+                Nenhum ingresso validado nesta sessão ainda.
+              </div>
+            ) : (
+              recentScans.map((scan, i) => (
                 <div 
-                  key={ticket.id}
-                  style={{
-                    background: ticket.scanned ? 'rgba(74, 222, 128, 0.08)' : 'rgba(255, 255, 255, 0.03)',
-                    border: ticket.scanned ? '1px solid rgba(74, 222, 128, 0.35)' : '1px solid rgba(255, 255, 255, 0.08)',
-                    borderRadius: '14px',
-                    padding: '1.1rem',
-                    display: 'flex',
-                    flexDirection: 'column',
-                    gap: '0.8rem'
+                  key={i} 
+                  style={{ 
+                    background: 'rgba(255,255,255,0.04)', 
+                    border: '1px solid rgba(255,255,255,0.08)', 
+                    borderRadius: '10px', 
+                    padding: '0.75rem 1rem', 
+                    display: 'flex', 
+                    alignItems: 'center', 
+                    justifyContent: 'space-between' 
                   }}
                 >
-                  {/* Topo do Card: Nome e Badges de Status */}
-                  <div className="flex items-start justify-between gap-2">
-                    <div>
-                      <strong style={{ fontSize: '1.1rem', color: '#fff', display: 'block', lineHeight: 1.25 }}>
-                        {ticket.user.name}
-                      </strong>
-                      <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
-                        {ticket.user.email}
-                      </span>
-                    </div>
-
-                    <div className="flex flex-col items-end gap-1" style={{ flexShrink: 0 }}>
-                      {ticket.status === 'PAID' ? (
-                        <span style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', padding: '0.2rem 0.6rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800 }}>
-                          PAGO
-                        </span>
-                      ) : (
-                        <span style={{ background: 'rgba(223, 186, 82, 0.15)', color: 'var(--primary)', padding: '0.2rem 0.6rem', borderRadius: '10px', fontSize: '0.75rem', fontWeight: 800 }}>
-                          AGUARDANDO
-                        </span>
-                      )}
-                      <code style={{ background: 'rgba(0,0,0,0.5)', padding: '0.15rem 0.4rem', borderRadius: '4px', color: 'var(--primary)', fontSize: '0.75rem' }}>
-                        #{ticket.id.substring(0, 8).toUpperCase()}
-                      </code>
-                    </div>
+                  <div>
+                    <strong style={{ color: '#fff', fontSize: '0.95rem', display: 'block' }}>{scan.name}</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
+                      CPF: {scan.cpf} • {scan.ticketType === 'VIP' ? 'VIP Ouro' : 'Padrão'}
+                    </span>
                   </div>
-
-                  {/* Informações de Documento e Contato */}
-                  <div className="flex justify-between items-center" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.6rem' }}>
-                    <span>CPF: <strong>{ticket.user.cpf}</strong></span>
-                    {ticket.user.phone && <span style={{ color: 'rgba(255,255,255,0.6)' }}>{ticket.user.phone}</span>}
-                  </div>
-
-                  {/* Rodapé do Card: Presença e Botão de Ação Tátil */}
-                  <div className="flex items-center justify-between gap-3" style={{ borderTop: '1px solid rgba(255,255,255,0.06)', paddingTop: '0.75rem' }}>
-                    <div style={{ flex: 1 }}>
-                      {ticket.scanned ? (
-                        <span className="flex items-center gap-1.5" style={{ color: '#4ade80', fontSize: '0.85rem', fontWeight: 700 }}>
-                          <CheckCircle2 size={16} />
-                          Presente {ticket.scannedAt && `(${new Date(ticket.scannedAt).toLocaleTimeString('pt-BR', { hour: '2-digit', minute: '2-digit' })})`}
-                        </span>
-                      ) : (
-                        <span className="flex items-center gap-1.5" style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.85rem' }}>
-                          <Clock size={16} />
-                          Não Entrou
-                        </span>
-                      )}
-                    </div>
-
-                    <button
-                      onClick={() => handleManualCheckin(ticket.id, ticket.scanned)}
-                      style={{
-                        background: ticket.scanned ? 'rgba(239, 68, 68, 0.2)' : (ticket.status === 'PAID' ? '#4ade80' : 'var(--primary)'),
-                        color: ticket.scanned ? '#f87171' : '#000',
-                        border: ticket.scanned ? '1px solid rgba(239, 68, 68, 0.4)' : 'none',
-                        padding: '0.65rem 1.1rem',
-                        borderRadius: '10px',
-                        fontSize: '0.85rem',
-                        fontWeight: 800,
-                        cursor: 'pointer',
-                        minHeight: '40px',
-                        whiteSpace: 'nowrap'
-                      }}
-                    >
-                      {ticket.scanned ? 'Desfazer Entrada' : (ticket.status === 'PAID' ? 'Confirmar Entrada' : 'Liberar Entrada')}
-                    </button>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ color: '#4ade80', fontSize: '0.75rem', fontWeight: 800, display: 'block' }}>
+                      ✓ {scan.status}
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.4)', fontSize: '0.75rem' }}>
+                      {scan.time}
+                    </span>
                   </div>
                 </div>
-              ))}
-            </div>
-          )}
+              ))
+            )}
+          </div>
         </div>
 
       </div>
 
-      {/* MODAL SCANNER DE QR CODE */}
-      {scannerOpen && (
-        <div style={{
-          position: 'fixed', top: 0, left: 0, width: '100%', height: '100%',
-          background: 'rgba(0,0,0,0.88)', backdropFilter: 'blur(12px)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center', zIndex: 9999, padding: '0.75rem'
-        }}>
-          <div className="glass-panel animate-scale-in flex flex-col items-center" style={{ width: '100%', maxWidth: '480px', position: 'relative', padding: '1.5rem 1.2rem', maxHeight: '95vh', overflowY: 'auto' }}>
-            
-            {/* Fechar Modal */}
-            <button 
-              onClick={closeScannerModal}
-              style={{ position: 'absolute', top: '1rem', right: '1rem', background: 'rgba(255,255,255,0.1)', border: 'none', color: '#fff', cursor: 'pointer', borderRadius: '50%', width: '36px', height: '36px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-            >
-              <X size={20} />
-            </button>
+      {/* Caixa de Digitação Manual ou Leitor USB */}
+      <div className="glass-panel" style={{ padding: '1.5rem' }}>
+        <div className="flex items-center gap-2" style={{ marginBottom: '0.5rem' }}>
+          <Keyboard size={18} color="var(--primary)" />
+          <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', fontWeight: 800, color: '#fff' }}>
+            DIGITAÇÃO MANUAL OU LEITOR USB
+          </span>
+        </div>
+        <p style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.85rem', margin: '0 0 1rem' }}>
+          Caso o convidado esteja com o voucher impresso ou QR Code danificado, digite o código do ingresso abaixo:
+        </p>
 
-            <h2 style={{ fontSize: '1.4rem', color: '#fff', margin: '0 0 0.3rem', display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
-              <QrCode color="var(--primary)" size={22} />
-              Validador de QR Code
-            </h2>
-            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', marginBottom: '1.2rem', textAlign: 'center' }}>
-              Aponte a câmera ou use o leitor USB na credencial do participante.
-            </p>
+        <form onSubmit={handleManualSubmit} className="flex gap-3 mobile-col">
+          <input 
+            ref={manualInputRef}
+            type="text" 
+            placeholder="Aproxime o leitor de QR ou digite o token..." 
+            value={manualCode}
+            onChange={(e) => setManualCode(e.target.value)}
+            className="input-field"
+            style={{ 
+              flex: 1, 
+              padding: '1rem 1.2rem', 
+              fontSize: '1rem', 
+              background: '#080d1a', 
+              border: '1px solid rgba(223, 186, 82, 0.4)' 
+            }}
+          />
 
-            {/* Container da Câmera */}
-            <div 
-              id="qr-reader-container"
-              ref={scannerContainerRef}
-              style={{ 
-                width: '100%', 
-                maxWidth: '280px', 
-                height: cameraActive ? '280px' : '0px', 
-                overflow: 'hidden',
-                borderRadius: '16px',
-                marginBottom: cameraActive ? '1rem' : '0',
-                background: '#000'
-              }}
-            />
-
-            {!cameraActive ? (
-              <button
-                onClick={startCamera}
-                className="btn-secondary"
-                style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', padding: '0.75rem 1.25rem', marginBottom: '1.2rem', width: '100%', maxWidth: '280px' }}
-              >
-                <Camera size={18} color="var(--primary)" />
-                Ativar Câmera
-              </button>
+          <button 
+            type="submit" 
+            disabled={processing}
+            className="btn-primary"
+            style={{ padding: '1rem 2rem', fontSize: '0.95rem', minWidth: '240px' }}
+          >
+            {processing ? (
+              <>
+                <RefreshCw size={18} className="animate-spin" /> Processando...
+              </>
             ) : (
-              <button
-                onClick={stopCamera}
-                className="btn-secondary"
-                style={{ padding: '0.5rem 1rem', marginBottom: '1rem', fontSize: '0.85rem' }}
-              >
-                Desativar Câmera
-              </button>
+              <>
+                <Check size={18} /> VALIDAR ENTRADA / CHECK-IN
+              </>
+            )}
+          </button>
+        </form>
+      </div>
+
+      {/* MODAL DE RESULTADO DO SCANNER */}
+      {lastResult && (
+        <div style={{
+          position: 'fixed',
+          top: 0,
+          left: 0,
+          right: 0,
+          bottom: 0,
+          background: 'rgba(0,0,0,0.85)',
+          backdropFilter: 'blur(8px)',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          zIndex: 9999,
+          padding: '1rem'
+        }}>
+          <div 
+            className="glass-panel text-center animate-scale-in"
+            style={{ 
+              maxWidth: '520px', 
+              width: '100%', 
+              padding: '2.5rem',
+              border: lastResult.type === 'SUCCESS' ? '2px solid #4ade80' : lastResult.type === 'PENDING' ? '2px solid #facc15' : '2px solid #f87171'
+            }}
+          >
+            {lastResult.type === 'SUCCESS' && (
+              <>
+                <div style={{ margin: '0 auto 1.2rem', width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(74, 222, 128, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <CheckCircle2 size={42} color="#4ade80" />
+                </div>
+                <h2 style={{ color: '#4ade80', fontSize: '1.8rem', margin: '0 0 0.5rem' }}>ENTRADA AUTORIZADA!</h2>
+                <p style={{ color: 'rgba(255,255,255,0.8)', fontSize: '1rem', marginBottom: '1.5rem' }}>{lastResult.message}</p>
+                
+                <div style={{ background: 'rgba(0,0,0,0.4)', padding: '1.2rem', borderRadius: '12px', textAlign: 'left', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+                  <div style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.75rem', textTransform: 'uppercase' }}>PARTICIPANTE</div>
+                  <div style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 700 }}>{lastResult.ticket.name}</div>
+                  <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>CPF: {lastResult.ticket.cpf}</div>
+                  <div style={{ color: 'var(--primary)', fontSize: '0.85rem', marginTop: '0.4rem', fontWeight: 600 }}>
+                    Categoria: {lastResult.ticket.ticketType === 'VIP' ? '★ VIP Ouro (com Café 08h)' : '✓ Padrão'}
+                  </div>
+                </div>
+
+                <button 
+                  onClick={() => setLastResult(null)}
+                  className="btn-primary" 
+                  style={{ width: '100%', padding: '0.9rem' }}
+                >
+                  OK, Próximo Participante
+                </button>
+              </>
             )}
 
-            {/* Campo de Leitura para Bipador USB ou Digitação Manual */}
-            <form 
-              onSubmit={(e) => { e.preventDefault(); processScan(scanInput); }} 
-              style={{ width: '100%', marginBottom: '1.2rem' }}
-            >
-              <div className="flex gap-2 mobile-col">
-                <input
-                  ref={scanInputRef}
-                  type="text"
-                  placeholder="Bipar ou digitar código..."
-                  value={scanInput}
-                  onChange={(e) => setScanInput(e.target.value)}
-                  className="input-field"
-                  style={{ fontSize: '0.9rem', padding: '0.75rem 0.9rem', flex: 1 }}
-                />
-                <button
-                  type="submit"
-                  disabled={scanLoading || !scanInput.trim()}
-                  className="btn-primary"
-                  style={{ padding: '0.75rem 1.2rem', minHeight: '42px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
-                >
-                  {scanLoading ? 'Bipando...' : 'Confirmar'}
-                </button>
-              </div>
-            </form>
-
-            {/* Card de Resultado do Scan */}
-            {scanResult && (
-              <div 
-                className="animate-scale-in"
-                style={{
-                  width: '100%',
-                  padding: '1.2rem',
-                  borderRadius: '12px',
-                  background: scanResult.type === 'success' 
-                    ? 'rgba(74, 222, 128, 0.15)' 
-                    : (scanResult.type === 'warning' ? 'rgba(223, 186, 82, 0.15)' : 'rgba(239, 68, 68, 0.15)'),
-                  border: `1px solid ${scanResult.type === 'success' ? '#4ade80' : (scanResult.type === 'warning' ? 'var(--primary)' : '#ef4444')}`,
-                  textAlign: 'center'
-                }}
-              >
-                {scanResult.type === 'success' && <CheckCircle2 size={36} color="#4ade80" style={{ margin: '0 auto 0.5rem' }} />}
-                {scanResult.type === 'warning' && <AlertTriangle size={36} color="var(--primary)" style={{ margin: '0 auto 0.5rem' }} />}
-                {scanResult.type === 'error' && <XCircle size={36} color="#ef4444" style={{ margin: '0 auto 0.5rem' }} />}
-
-                <h3 style={{ fontSize: '1.2rem', color: '#fff', margin: '0 0 0.3rem' }}>
-                  {scanResult.title}
-                </h3>
-                <p style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)', margin: '0 0 0.5rem' }}>
-                  {scanResult.message}
-                </p>
-
-                {scanResult.ticket && (
-                  <div style={{ background: 'rgba(0,0,0,0.3)', padding: '0.6rem', borderRadius: '8px', fontSize: '0.85rem', color: '#fff', marginTop: '0.5rem' }}>
-                    <strong>{scanResult.ticket.name}</strong> • CPF: {scanResult.ticket.cpf}
+            {lastResult.type === 'ALREADY_SCANNED' && (
+              <>
+                <div style={{ margin: '0 auto 1.2rem', width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(248, 113, 113, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={42} color="#f87171" />
+                </div>
+                <h2 style={{ color: '#f87171', fontSize: '1.8rem', margin: '0 0 0.5rem' }}>INGRESSO JÁ UTILIZADO!</h2>
+                <p style={{ color: '#fca5a5', fontSize: '1rem', marginBottom: '1.5rem' }}>{lastResult.message}</p>
+                
+                {lastResult.ticket && (
+                  <div style={{ background: 'rgba(0,0,0,0.4)', padding: '1.2rem', borderRadius: '12px', textAlign: 'left', marginBottom: '1.5rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+                    <div style={{ color: '#fff', fontSize: '1.1rem', fontWeight: 700 }}>{lastResult.ticket.name}</div>
+                    <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>CPF: {lastResult.ticket.cpf}</div>
                   </div>
                 )}
 
-                {scanResult.canForce && (
-                  <button
-                    onClick={() => processScan(scanResult.ticket.id, true)}
-                    className="btn-primary"
-                    style={{ marginTop: '0.8rem', padding: '0.5rem 1rem', fontSize: '0.85rem' }}
-                  >
-                    Liberar Entrada Mesmo Assim (Pago no Local)
-                  </button>
-                )}
-              </div>
+                <button 
+                  onClick={() => setLastResult(null)}
+                  className="btn-secondary" 
+                  style={{ width: '100%', padding: '0.9rem', borderColor: '#f87171', color: '#f87171' }}
+                >
+                  Fechar Alerta
+                </button>
+              </>
             )}
 
-            <div style={{ marginTop: '1rem', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)', textAlign: 'center' }}>
-              💡 Assim que bipar com sucesso, a lista ao fundo é atualizada automaticamente em tempo real.
-            </div>
+            {lastResult.type === 'PENDING' && (
+              <>
+                <div style={{ margin: '0 auto 1.2rem', width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(250, 204, 21, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <AlertTriangle size={42} color="#facc15" />
+                </div>
+                <h2 style={{ color: '#facc15', fontSize: '1.8rem', margin: '0 0 0.5rem' }}>PAGAMENTO PENDENTE</h2>
+                <p style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.95rem', marginBottom: '1.5rem' }}>{lastResult.message}</p>
 
+                <div className="flex gap-3">
+                  <button 
+                    onClick={() => handleScanToken(lastResult.token, true)}
+                    className="btn-primary" 
+                    style={{ flex: 1, padding: '0.9rem', background: '#facc15', color: '#000' }}
+                  >
+                    Liberar Entrada Mesmo Assim
+                  </button>
+                  <button 
+                    onClick={() => setLastResult(null)}
+                    className="btn-secondary" 
+                    style={{ flex: 1, padding: '0.9rem' }}
+                  >
+                    Barrar Entrada
+                  </button>
+                </div>
+              </>
+            )}
+
+            {lastResult.type === 'ERROR' && (
+              <>
+                <div style={{ margin: '0 auto 1.2rem', width: '70px', height: '70px', borderRadius: '50%', background: 'rgba(248, 113, 113, 0.2)', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                  <XCircle size={42} color="#f87171" />
+                </div>
+                <h2 style={{ color: '#f87171', fontSize: '1.8rem', margin: '0 0 0.5rem' }}>INGRESSO INVÁLIDO</h2>
+                <p style={{ color: '#fca5a5', fontSize: '1rem', marginBottom: '1.5rem' }}>{lastResult.message}</p>
+
+                <button 
+                  onClick={() => setLastResult(null)}
+                  className="btn-secondary" 
+                  style={{ width: '100%', padding: '0.9rem' }}
+                >
+                  Fechar
+                </button>
+              </>
+            )}
           </div>
         </div>
       )}
