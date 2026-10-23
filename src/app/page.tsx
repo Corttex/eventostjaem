@@ -186,8 +186,8 @@ export default function Home() {
             </div>
             <div className="glass-panel flex flex-col items-center justify-center text-center" style={{ flex: 1, padding: '2rem 1.5rem' }}>
               <MapPin color="var(--primary)" size={36} style={{ marginBottom: '1.2rem' }} />
-              <strong style={{ fontSize: '1.3rem', marginTop: '0.2rem', color: '#fff' }}>Asa Sul, Brasília / DF</strong>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '0.95rem', color: 'rgba(255,255,255,0.75)' }}>SGAS quadra 603 Sul, conjunto "c" L2 Sul</p>
+              <strong style={{ fontSize: '1.3rem', marginTop: '0.2rem', color: '#fff' }}>LBV — Asa Sul, Brasília / DF</strong>
+              <p style={{ margin: '0.5rem 0 0', fontSize: '0.95rem', color: 'rgba(255,255,255,0.75)' }}>Parlamundi da LBV • SGAS 915 / 603 Sul, L2 Sul</p>
             </div>
           </div>
 

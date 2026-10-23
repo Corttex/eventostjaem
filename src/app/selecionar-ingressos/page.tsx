@@ -211,7 +211,7 @@ export default function SelecionarIngressosPage() {
           <div className="flex items-center gap-4">
             <MapPin size={22} color="var(--primary)" />
             <span style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.9)' }}>
-              SGAS quadra 603 Sul, L2 Sul — Asa Sul, Brasília / DF
+              LBV (Parlamundi) • SGAS quadra 603 / 915 Sul, L2 Sul — Asa Sul, Brasília / DF
             </span>
           </div>
         </div>

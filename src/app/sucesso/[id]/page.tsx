@@ -359,7 +359,7 @@ export default function SucessoPage() {
           </strong>
           <ul style={{ paddingLeft: '1.2rem', margin: 0 }}>
             <li>No dia do evento, apresente o QR Code no seu celular ou impresso na portaria.</li>
-            <li>O local do evento será no SGAS quadra 603 Sul, L2 Sul — Asa Sul, Brasília / DF, das 09h às 17h.</li>
+            <li>O local do evento será no LBV (Parlamundi da LBV) • SGAS quadra 603 / 915 Sul, L2 Sul — Asa Sul, Brasília / DF, das 09h às 16h.</li>
             <li>Para dúvidas ou suporte à sua credencial, contate o TJAEM Brasil.</li>
           </ul>
         </div>

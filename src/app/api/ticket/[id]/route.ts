@@ -292,7 +292,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       color: textWhite,
     });
 
-    page.drawText('SGAS quadra 603 Sul, conjunto "c" L2 Sul', {
+    page.drawText('LBV (Parlamundi) • SGAS 603 / 915 Sul', {
       x: cardX + 20,
       y: card2Y + card2Height - 72,
       size: 11,
