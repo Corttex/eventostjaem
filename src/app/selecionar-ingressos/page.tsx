@@ -22,7 +22,7 @@ export default function SelecionarIngressosPage() {
   const [buyerPassword, setBuyerPassword] = useState('');
 
   // Quantidade e Participantes
-  const [ticketType, setTicketType] = useState<'VIP' | 'PADRAO'>('VIP');
+  const [ticketType, setTicketType] = useState<'ESTUDANTE' | 'PADRAO' | 'VIP'>('PADRAO');
   const [quantity, setQuantity] = useState(1);
   const [attendees, setAttendees] = useState<Attendee[]>([
     { name: '', email: '', cpf: '' }
@@ -30,7 +30,11 @@ export default function SelecionarIngressosPage() {
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD' | 'BOLETO'>('PIX');
   const [loading, setLoading] = useState(false);
 
-  const pricePerTicket = ticketType === 'PADRAO' ? 150.00 : 349.00;
+  const pricePerTicket = ticketType === 'ESTUDANTE' 
+    ? 150.00 
+    : ticketType === 'VIP' 
+    ? 427.00 
+    : 280.00;
 
   // Carregar dados salvos da página anterior
   useEffect(() => {
@@ -181,7 +185,11 @@ export default function SelecionarIngressosPage() {
             </h1>
             <div style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', background: 'rgba(223, 186, 82, 0.15)', padding: '0.3rem 0.8rem', borderRadius: '20px', border: '1px solid var(--primary)' }}>
               <span style={{ fontSize: '0.85rem', color: '#ffeca8', fontWeight: 700 }}>
-                {ticketType === 'VIP' ? '★ Ingresso VIP + Kit Completo' : 'Ingresso Padrão'}
+                {ticketType === 'ESTUDANTE' 
+                  ? '🎓 Ingresso Estudante de Direito'
+                  : ticketType === 'VIP'
+                  ? '★ Kit Aniversário 30 Anos Arbitragem e Mediação'
+                  : 'Ingresso Padrão Profissional'}
               </span>
             </div>
           </div>
@@ -197,7 +205,7 @@ export default function SelecionarIngressosPage() {
           <div className="flex items-center gap-4">
             <Calendar size={22} color="var(--primary)" />
             <span style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.9)' }}>
-              22 de Novembro de 2026 • 09h às 16h (6h totais c/ almoço)
+              28 de Novembro de 2026 • 09h às 16h (6h totais c/ almoço)
             </span>
           </div>
           <div className="flex items-center gap-4">

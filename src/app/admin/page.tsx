@@ -55,7 +55,7 @@ export default function AdminPage() {
   // Filtros & Busca
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
-  const [typeFilter, setTypeFilter] = useState<'ALL' | 'VIP' | 'PADRAO'>('ALL');
+  const [typeFilter, setTypeFilter] = useState<'ALL' | 'VIP' | 'PADRAO' | 'ESTUDANTE'>('ALL');
   const [activeTab, setActiveTab] = useState<'PEDIDOS' | 'CREDENCIAS'>('PEDIDOS');
 
   // Modal Novo Ingresso Cortesia/Manual
@@ -410,8 +410,9 @@ export default function AdminPage() {
               style={{ padding: '0.65rem 1rem', fontSize: '0.85rem', background: '#0a0f1e', cursor: 'pointer', border: '1px solid rgba(255,255,255,0.15)' }}
             >
               <option value="ALL">Todas as Categorias</option>
-              <option value="VIP">Ingresso VIP + Kit</option>
+              <option value="VIP">Kit Aniversário 30 Anos (VIP)</option>
               <option value="PADRAO">Ingresso Padrão</option>
+              <option value="ESTUDANTE">Estudante de Direito</option>
             </select>
 
             {/* Atualizar */}

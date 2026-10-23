@@ -115,17 +115,31 @@ export async function POST(req: Request) {
 
     // 3. Calcular Valor Total e Gerar a Cobrança no Asaas
     const ticketCount = attendees.length;
-    const ticketType = body.ticketType || 'VIP'; // 'PADRAO' (R$ 150) ou 'VIP' (R$ 349,00)
-    const unitPrice = ticketType === 'PADRAO' ? 150.00 : 349.00;
+    // Tipos de ingressos: 'ESTUDANTE' (R$ 150), 'PADRAO' (R$ 280), 'VIP' / 'KIT_ANIVERSARIO' (R$ 427)
+    const ticketType = body.ticketType || 'VIP';
+    
+    let unitPrice = 280.00;
+    let ticketTypeName = 'Ingresso Padrão';
+    
+    if (ticketType === 'ESTUDANTE') {
+      unitPrice = 150.00;
+      ticketTypeName = 'Ingresso Estudante de Direito';
+    } else if (ticketType === 'VIP' || ticketType === 'KIT_ANIVERSARIO') {
+      unitPrice = 427.00;
+      ticketTypeName = 'Kit Aniversário 30 Anos Arbitragem e Mediação (VIP)';
+    } else {
+      unitPrice = 280.00;
+      ticketTypeName = 'Ingresso Padrão';
+    }
+
     const totalAmount = ticketCount * unitPrice;
 
-    const ticketTypeName = ticketType === 'PADRAO' ? 'Ingresso Padrão' : 'Ingresso VIP (Kit Exclusivo)';
     const chargePayload: any = {
       customer: customerId,
       billingType: paymentMethod, // PIX, CREDIT_CARD, BOLETO
       value: totalAmount,
       dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Vence em +1 dia
-      description: `${ticketTypeName} - 30 Anos da Lei de Arbitragem no Brasil (${ticketCount} ${ticketCount > 1 ? 'ingressos' : 'ingresso'})`
+      description: `${ticketTypeName} - 30 Anos Arbitragem e Mediação (${ticketCount} ${ticketCount > 1 ? 'ingressos' : 'ingresso'})`
     };
 
     const chargeRes = await fetch(`${asaasUrl}/payments`, {

@@ -36,9 +36,12 @@ export function getAsaasApiKey(): string {
     }
   }
 
-  // Sanitize
+  // Sanitize: ensure it starts with '$' (Asaas production API keys start with '$aact_')
   if (key.startsWith('\\$')) {
     key = key.substring(1);
+  }
+  if (!key.startsWith('$') && key.startsWith('aact_')) {
+    key = '$' + key;
   }
 
   cachedApiKey = key;
