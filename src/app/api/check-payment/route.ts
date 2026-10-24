@@ -112,7 +112,10 @@ export async function GET(req: Request) {
         status: t.status,
         name: t.user.name,
         cpf: t.user.cpf,
-        email: t.user.email
+        email: t.user.email,
+        isAssociate: t.isAssociate,
+        associateApproved: t.associateApproved,
+        associateRegistration: t.associateRegistration
       }))
     });
 

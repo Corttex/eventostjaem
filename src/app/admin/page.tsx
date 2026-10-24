@@ -20,6 +20,11 @@ interface TicketItem {
   scanned: boolean;
   scannedAt: string | null;
   createdAt: string;
+  isAssociate?: boolean;
+  associateRegistration?: string | null;
+  associateDocUrl?: string | null;
+  associateApproved?: boolean;
+  discountAmount?: number;
   user: {
     name: string;
     email: string;
@@ -56,7 +61,34 @@ export default function AdminPage() {
   const [search, setSearch] = useState('');
   const [paymentFilter, setPaymentFilter] = useState<'ALL' | 'PAID' | 'PENDING'>('ALL');
   const [typeFilter, setTypeFilter] = useState<'ALL' | 'VIP' | 'PADRAO' | 'ESTUDANTE'>('ALL');
+  const [associateFilter, setAssociateFilter] = useState<'ALL' | 'ASSOCIATES' | 'PENDING_APPROVAL' | 'APPROVED'>('ALL');
   const [activeTab, setActiveTab] = useState<'PEDIDOS' | 'CREDENCIAS'>('PEDIDOS');
+  const [actionLoadingId, setActionLoadingId] = useState<string | null>(null);
+
+  const handleApproveAssociate = async (ticketId: string, approved: boolean) => {
+    setActionLoadingId(ticketId);
+    try {
+      const res = await fetch('/api/admin/approve-associate', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId, approved })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert(approved ? 'Carteirinha APROVADA com sucesso! QR Code e PDF liberados para o participante.' : 'Aprovação da carteirinha revogada/rejeitada.');
+        fetchTickets();
+        if (selectedTicket && selectedTicket.id === ticketId) {
+          setSelectedTicket(prev => prev ? { ...prev, associateApproved: approved } : null);
+        }
+      } else {
+        alert(data.error || 'Erro ao processar aprovação.');
+      }
+    } catch (e) {
+      alert('Erro de conexão ao atualizar status de aprovação.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
 
   // Modal Novo Ingresso Cortesia/Manual
   const [manualModalOpen, setManualModalOpen] = useState(false);
@@ -170,6 +202,10 @@ export default function AdminPage() {
     if (paymentFilter === 'PENDING' && t.status !== 'PENDING') return false;
     if (typeFilter !== 'ALL' && (t.ticketType || 'VIP') !== typeFilter) return false;
 
+    if (associateFilter === 'ASSOCIATES' && !t.isAssociate) return false;
+    if (associateFilter === 'PENDING_APPROVAL' && (!t.isAssociate || t.associateApproved)) return false;
+    if (associateFilter === 'APPROVED' && (!t.isAssociate || !t.associateApproved)) return false;
+
     if (search.trim()) {
       const q = search.toLowerCase();
       const matchName = t.user.name.toLowerCase().includes(q);
@@ -177,7 +213,8 @@ export default function AdminPage() {
       const matchEmail = t.user.email.toLowerCase().includes(q);
       const matchId = t.id.toLowerCase().includes(q);
       const matchPaymentId = (t.asaasPaymentId || '').toLowerCase().includes(q);
-      return matchName || matchCpf || matchEmail || matchId || matchPaymentId;
+      const matchMatricula = (t.associateRegistration || '').toLowerCase().includes(q);
+      return matchName || matchCpf || matchEmail || matchId || matchPaymentId || matchMatricula;
     }
 
     return true;
@@ -415,6 +452,19 @@ export default function AdminPage() {
               <option value="ESTUDANTE">Estudante de Direito</option>
             </select>
 
+            {/* Filtro Associados TJAEM */}
+            <select
+              value={associateFilter}
+              onChange={(e) => setAssociateFilter(e.target.value as any)}
+              className="input-field"
+              style={{ padding: '0.65rem 1rem', fontSize: '0.85rem', background: '#0a0f1e', cursor: 'pointer', border: associateFilter !== 'ALL' ? '1px solid var(--primary)' : '1px solid rgba(255,255,255,0.15)', color: associateFilter !== 'ALL' ? '#ffeca8' : '#fff' }}
+            >
+              <option value="ALL">Todos os Inscritos</option>
+              <option value="ASSOCIATES">★ Apenas Associados TJAEM (-20%)</option>
+              <option value="PENDING_APPROVAL">⚠️ Carteirinha Pendente de Aprovação</option>
+              <option value="APPROVED">✓ Carteirinha Aprovada</option>
+            </select>
+
             {/* Atualizar */}
             <button
               onClick={fetchTickets}
@@ -443,6 +493,7 @@ export default function AdminPage() {
                 <th style={{ padding: '1rem 1.2rem' }}>COMPRADOR / PARTICIPANTE</th>
                 <th style={{ padding: '1rem 1.2rem' }}>VALOR & MÉTODO</th>
                 <th style={{ padding: '1rem 1.2rem' }}>PAGAMENTO</th>
+                <th style={{ padding: '1rem 1.2rem' }}>ASSOCIADO TJAEM</th>
                 <th style={{ padding: '1rem 1.2rem' }}>CREDENCIAL & PORTARIA</th>
                 <th style={{ padding: '1rem 1.2rem', textAlign: 'center' }}>AÇÕES</th>
               </tr>
@@ -450,7 +501,7 @@ export default function AdminPage() {
             <tbody>
               {filteredTickets.length === 0 ? (
                 <tr>
-                  <td colSpan={7} style={{ textAlign: 'center', padding: '3.5rem', color: 'rgba(255,255,255,0.5)' }}>
+                  <td colSpan={8} style={{ textAlign: 'center', padding: '3.5rem', color: 'rgba(255,255,255,0.5)' }}>
                     Nenhuma inscrição encontrada com os filtros selecionados.
                   </td>
                 </tr>
@@ -460,7 +511,7 @@ export default function AdminPage() {
                     key={ticket.id}
                     style={{ 
                       borderBottom: '1px solid rgba(255,255,255,0.05)',
-                      background: ticket.scanned ? 'rgba(74, 222, 128, 0.03)' : 'transparent',
+                      background: ticket.scanned ? 'rgba(74, 222, 128, 0.03)' : (ticket.isAssociate && !ticket.associateApproved ? 'rgba(250, 204, 21, 0.04)' : 'transparent'),
                       transition: 'background 0.2s'
                     }}
                   >
@@ -500,7 +551,7 @@ export default function AdminPage() {
                           fontSize: '0.8rem', 
                           fontWeight: 600 
                         }}>
-                          PADRÃO
+                          {ticket.ticketType === 'ESTUDANTE' ? 'ESTUDANTE' : 'PADRÃO'}
                         </span>
                       )}
                     </td>
@@ -522,6 +573,9 @@ export default function AdminPage() {
                       </strong>
                       <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', textTransform: 'uppercase', letterSpacing: '0.5px' }}>
                         {ticket.paymentMethod || 'PIX'}
+                        {ticket.isAssociate && (
+                          <span style={{ color: '#4ade80', marginLeft: '0.4rem', fontWeight: 700 }}>(-20%)</span>
+                        )}
                       </span>
                     </td>
 
@@ -539,7 +593,7 @@ export default function AdminPage() {
                           alignItems: 'center',
                           gap: '0.35rem'
                         }}>
-                          <CheckCircle2 size={13} /> APROVADO
+                          <CheckCircle2 size={13} /> PAGO
                         </span>
                       ) : (
                         <span style={{ 
@@ -554,6 +608,85 @@ export default function AdminPage() {
                           gap: '0.35rem'
                         }}>
                           <Clock size={13} /> AGUARDANDO
+                        </span>
+                      )}
+                    </td>
+
+                    {/* Coluna Associado TJAEM & Carteirinha */}
+                    <td style={{ padding: '1rem 1.2rem' }}>
+                      {ticket.isAssociate ? (
+                        <div className="flex flex-col gap-1">
+                          <span style={{ fontSize: '0.8rem', color: '#ffeca8', fontWeight: 700 }}>
+                            Matrícula: {ticket.associateRegistration || 'N/I'}
+                          </span>
+                          
+                          {/* Status da aprovação manual */}
+                          {ticket.associateApproved ? (
+                            <span style={{ 
+                              background: 'rgba(74, 222, 128, 0.15)', 
+                              color: '#4ade80', 
+                              padding: '0.2rem 0.6rem', 
+                              borderRadius: '8px', 
+                              fontSize: '0.72rem', 
+                              fontWeight: 700,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              width: 'fit-content'
+                            }}>
+                              <CheckCircle2 size={12} /> Aprovado pelo ADM
+                            </span>
+                          ) : (
+                            <div className="flex items-center gap-2">
+                              <span style={{ 
+                                background: 'rgba(250, 204, 21, 0.2)', 
+                                color: '#facc15', 
+                                padding: '0.2rem 0.6rem', 
+                                borderRadius: '8px', 
+                                fontSize: '0.72rem', 
+                                fontWeight: 700,
+                                display: 'inline-flex',
+                                alignItems: 'center',
+                                gap: '0.3rem',
+                                width: 'fit-content'
+                              }}>
+                                ⚠️ Conferir Carteirinha
+                              </span>
+
+                              <button
+                                onClick={() => handleApproveAssociate(ticket.id, true)}
+                                disabled={actionLoadingId === ticket.id}
+                                style={{
+                                  background: '#4ade80',
+                                  color: '#000',
+                                  border: 'none',
+                                  borderRadius: '6px',
+                                  padding: '0.25rem 0.6rem',
+                                  fontSize: '0.72rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer'
+                                }}
+                                title="Aprovar desconto e liberar credencial"
+                              >
+                                {actionLoadingId === ticket.id ? '...' : '✓ Aprovar'}
+                              </button>
+                            </div>
+                          )}
+
+                          {ticket.associateDocUrl && (
+                            <a
+                              href={ticket.associateDocUrl}
+                              target="_blank"
+                              rel="noreferrer"
+                              style={{ fontSize: '0.72rem', color: 'var(--primary)', textDecoration: 'underline', marginTop: '0.1rem' }}
+                            >
+                              Ver Foto da Carteirinha ↗
+                            </a>
+                          )}
+                        </div>
+                      ) : (
+                        <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.4)' }}>
+                          Não associado
                         </span>
                       )}
                     </td>
@@ -710,6 +843,81 @@ export default function AdminPage() {
               <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>Valor:</span> <strong>R$ {(selectedTicket.amount || 0).toFixed(2)} ({selectedTicket.paymentMethod || 'PIX'})</strong></div>
               <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>ID Asaas:</span> <code>{selectedTicket.asaasPaymentId || 'Cortesia / Manual'}</code></div>
               <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>Check-in:</span> {selectedTicket.scanned ? <span style={{ color: '#4ade80', fontWeight: 700 }}>Presente</span> : <span style={{ color: '#f87171' }}>Não entrou</span>}</div>
+              
+              {/* Bloco Associado TJAEM */}
+              {selectedTicket.isAssociate && (
+                <div style={{ marginTop: '0.8rem', paddingTop: '0.8rem', borderTop: '1px solid rgba(223, 186, 82, 0.2)' }}>
+                  <div className="flex items-center justify-between" style={{ marginBottom: '0.5rem' }}>
+                    <span style={{ color: '#ffeca8', fontWeight: 700, fontSize: '0.85rem' }}>★ Associado TJAEM Brasil (20% OFF)</span>
+                    {selectedTicket.associateApproved ? (
+                      <span style={{ background: 'rgba(74, 222, 128, 0.2)', color: '#4ade80', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                        ✓ Carteirinha Aprovada
+                      </span>
+                    ) : (
+                      <span style={{ background: 'rgba(250, 204, 21, 0.2)', color: '#facc15', padding: '0.2rem 0.6rem', borderRadius: '8px', fontSize: '0.75rem', fontWeight: 700 }}>
+                        ⚠️ Pendente de Aprovação
+                      </span>
+                    )}
+                  </div>
+
+                  <div style={{ marginBottom: '0.6rem' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.6)' }}>Matrícula Informada:</span> <strong>{selectedTicket.associateRegistration || 'Não informada'}</strong>
+                  </div>
+
+                  {selectedTicket.associateDocUrl && (
+                    <div style={{ marginBottom: '0.8rem' }}>
+                      <span style={{ color: 'rgba(255,255,255,0.6)', display: 'block', marginBottom: '0.3rem' }}>Foto da Carteirinha:</span>
+                      <a href={selectedTicket.associateDocUrl} target="_blank" rel="noreferrer">
+                        <img 
+                          src={selectedTicket.associateDocUrl} 
+                          alt="Carteirinha TJAEM" 
+                          style={{ maxWidth: '100%', maxHeight: '180px', borderRadius: '8px', border: '1px solid rgba(223, 186, 82, 0.4)', objectFit: 'contain', background: '#000' }} 
+                        />
+                      </a>
+                    </div>
+                  )}
+
+                  {/* Ação manual de aprovação / rejeição */}
+                  <div className="flex gap-2" style={{ marginTop: '0.5rem' }}>
+                    <button
+                      type="button"
+                      onClick={() => handleApproveAssociate(selectedTicket.id, true)}
+                      disabled={actionLoadingId === selectedTicket.id || selectedTicket.associateApproved}
+                      style={{
+                        flex: 1,
+                        background: selectedTicket.associateApproved ? 'rgba(74, 222, 128, 0.2)' : '#4ade80',
+                        color: selectedTicket.associateApproved ? '#4ade80' : '#000',
+                        border: 'none',
+                        padding: '0.6rem',
+                        borderRadius: '8px',
+                        fontWeight: 700,
+                        cursor: selectedTicket.associateApproved ? 'default' : 'pointer'
+                      }}
+                    >
+                      {selectedTicket.associateApproved ? '✓ Carteirinha Aprovada' : 'Aprovar Carteirinha'}
+                    </button>
+
+                    {selectedTicket.associateApproved && (
+                      <button
+                        type="button"
+                        onClick={() => handleApproveAssociate(selectedTicket.id, false)}
+                        disabled={actionLoadingId === selectedTicket.id}
+                        style={{
+                          background: 'rgba(248, 113, 113, 0.15)',
+                          color: '#f87171',
+                          border: '1px solid rgba(248, 113, 113, 0.3)',
+                          padding: '0.6rem 1rem',
+                          borderRadius: '8px',
+                          fontWeight: 600,
+                          cursor: 'pointer'
+                        }}
+                      >
+                        Revogar
+                      </button>
+                    )}
+                  </div>
+                </div>
+              )}
             </div>
 
             <div className="flex gap-3">

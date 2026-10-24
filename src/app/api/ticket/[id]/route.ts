@@ -96,6 +96,41 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       );
     }
 
+    // Se for associado com desconto, exige aprovação manual da carteirinha
+    if (ticket.isAssociate && !ticket.associateApproved) {
+      return new NextResponse(
+        `<!DOCTYPE html>
+        <html lang="pt-BR">
+        <head>
+          <meta charset="utf-8">
+          <title>Aprovação de Matrícula Pendente - TJAEM</title>
+          <style>
+            body { background: #060b16; color: #fff; font-family: sans-serif; display: flex; align-items: center; justify-content: center; min-height: 100vh; margin: 0; }
+            .card { background: #0f172a; border: 1px solid #dfba52; padding: 2.5rem; border-radius: 16px; max-width: 520px; text-align: center; }
+            h1 { color: #dfba52; font-size: 1.8rem; margin-top: 0; }
+            .badge { display: inline-block; background: rgba(223, 186, 82, 0.15); color: #dfba52; padding: 6px 14px; border-radius: 20px; font-weight: bold; font-size: 0.85rem; margin-bottom: 1rem; border: 1px solid #dfba52; }
+            p { color: rgba(255,255,255,0.85); line-height: 1.6; }
+            .btn { display: inline-block; background: #dfba52; color: #000; font-weight: bold; padding: 12px 24px; border-radius: 8px; text-decoration: none; margin-top: 1.5rem; }
+          </style>
+        </head>
+        <body>
+          <div class="card">
+            <span class="badge">Associado TJAEM Brasil (20% OFF)</span>
+            <h1>Em Análise pela Administração</h1>
+            <p>O pagamento de <strong>${ticket.user.name}</strong> já foi identificado com sucesso!</p>
+            <p>Por se tratar de um ingresso com <strong>20% de desconto de Associado TJAEM</strong> (Matrícula: <strong>${ticket.associateRegistration || 'Informada'}</strong>), sua carteirinha está em conferência manual pela equipe administrativa.</p>
+            <p style="font-size: 0.9rem; color: rgba(255,255,255,0.6);">Assim que aprovada no painel administrativo, sua credencial oficial com QR Code será liberada automaticamente aqui.</p>
+            <a href="/sucesso/${ticket.asaasPaymentId || ticket.id}" class="btn">Acompanhar Status</a>
+          </div>
+        </body>
+        </html>`,
+        {
+          status: 403,
+          headers: { 'Content-Type': 'text/html; charset=utf-8' }
+        }
+      );
+    }
+
     // Criar o documento PDF
     const pdfDoc = await PDFDocument.create();
     const pageWidth = 600;

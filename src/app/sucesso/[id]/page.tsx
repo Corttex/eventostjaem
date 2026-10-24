@@ -11,6 +11,9 @@ interface TicketInfo {
   cpf: string;
   email: string;
   status: string;
+  isAssociate?: boolean;
+  associateApproved?: boolean;
+  associateRegistration?: string | null;
 }
 
 export default function SucessoPage() {
@@ -290,10 +293,21 @@ export default function SucessoPage() {
                         <span style={{ fontSize: '0.75rem', color: 'var(--primary)', fontWeight: 700, textTransform: 'uppercase' }}>
                           Ingresso {idx + 1}
                         </span>
-                        {ticketPaid ? (
-                          <span style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', fontSize: '0.75rem', padding: '0.15rem 0.6rem', borderRadius: '10px', fontWeight: 700 }}>
-                            PAGO
+                        {t.isAssociate && (
+                          <span style={{ background: 'rgba(223, 186, 82, 0.2)', border: '1px solid var(--primary)', color: '#ffeca8', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 700 }}>
+                            ★ Associado TJAEM (-20%)
                           </span>
+                        )}
+                        {ticketPaid ? (
+                          t.isAssociate && !t.associateApproved ? (
+                            <span style={{ background: 'rgba(250, 204, 21, 0.2)', color: '#facc15', fontSize: '0.75rem', padding: '0.15rem 0.6rem', borderRadius: '10px', fontWeight: 700 }}>
+                              PAGO • AGUARDANDO APROVAÇÃO DA CARTEIRINHA
+                            </span>
+                          ) : (
+                            <span style={{ background: 'rgba(74, 222, 128, 0.15)', color: '#4ade80', fontSize: '0.75rem', padding: '0.15rem 0.6rem', borderRadius: '10px', fontWeight: 700 }}>
+                              PAGO & APROVADO
+                            </span>
+                          )
                         ) : (
                           <span style={{ background: 'rgba(223, 186, 82, 0.15)', color: 'var(--primary)', fontSize: '0.75rem', padding: '0.15rem 0.6rem', borderRadius: '10px', fontWeight: 700 }}>
                             AGUARDANDO PAGAMENTO
@@ -307,26 +321,54 @@ export default function SucessoPage() {
                       <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)' }}>
                         CPF: {t.cpf} • E-mail: {t.email}
                       </p>
+                      {t.isAssociate && t.associateRegistration && (
+                        <p style={{ margin: '0.2rem 0 0', fontSize: '0.8rem', color: 'var(--primary)' }}>
+                          Matrícula TJAEM: <strong>{t.associateRegistration}</strong>
+                        </p>
+                      )}
                     </div>
 
                     {ticketPaid ? (
-                      <a
-                        href={`/api/ticket/${t.id}`}
-                        target="_blank"
-                        rel="noreferrer"
-                        className="btn-primary"
-                        style={{
-                          display: 'inline-flex',
-                          alignItems: 'center',
-                          gap: '0.5rem',
-                          padding: '0.8rem 1.4rem',
-                          fontSize: '0.95rem',
-                          whiteSpace: 'nowrap'
-                        }}
-                      >
-                        <Download size={18} />
-                        Baixar PDF
-                      </a>
+                      t.isAssociate && !t.associateApproved ? (
+                        <div style={{ textAlign: 'right' }}>
+                          <span style={{ 
+                            display: 'inline-flex', 
+                            alignItems: 'center', 
+                            gap: '0.4rem', 
+                            padding: '0.6rem 1rem', 
+                            background: 'rgba(250, 204, 21, 0.12)', 
+                            color: '#facc15', 
+                            borderRadius: '8px', 
+                            fontSize: '0.85rem', 
+                            fontWeight: 600,
+                            border: '1px solid rgba(250, 204, 21, 0.3)' 
+                          }}>
+                            <Clock size={16} />
+                            Carteirinha em Análise Manual
+                          </span>
+                          <span style={{ display: 'block', fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.3rem' }}>
+                            O PDF será liberado assim que o ADM aprovar
+                          </span>
+                        </div>
+                      ) : (
+                        <a
+                          href={`/api/ticket/${t.id}`}
+                          target="_blank"
+                          rel="noreferrer"
+                          className="btn-primary"
+                          style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '0.5rem',
+                            padding: '0.8rem 1.4rem',
+                            fontSize: '0.95rem',
+                            whiteSpace: 'nowrap'
+                          }}
+                        >
+                          <Download size={18} />
+                          Baixar PDF
+                        </a>
+                      )
                     ) : (
                       <div style={{ textAlign: 'right' }}>
                         <span style={{ 

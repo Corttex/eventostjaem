@@ -38,6 +38,7 @@ export default function Home() {
   const [buyerCpf, setBuyerCpf] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
   const [buyerPassword, setBuyerPassword] = useState('');
+  const [isAssociate, setIsAssociate] = useState(false);
   const [cpfExists, setCpfExists] = useState(false);
   const [checkingCpf, setCheckingCpf] = useState(false);
 
@@ -79,7 +80,8 @@ export default function Home() {
       cpf: buyerCpf,
       phone: buyerPhone,
       password: buyerPassword,
-      ticketType: selectedTicketType
+      ticketType: selectedTicketType,
+      isAssociate: isAssociate
     };
     
     // Salvar dados do comprador e tipo de ingresso na sessão
@@ -890,6 +892,43 @@ export default function Home() {
                 </div>
               </div>
 
+              {/* Opção de Desconto de Associado TJAEM (20% OFF) */}
+              <div style={{
+                margin: '1.2rem 0 0.5rem',
+                padding: '1rem 1.25rem',
+                borderRadius: '12px',
+                background: isAssociate ? 'rgba(74, 222, 128, 0.12)' : 'rgba(223, 186, 82, 0.08)',
+                border: isAssociate ? '1px solid #4ade80' : '1px solid rgba(223, 186, 82, 0.25)',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'space-between',
+                gap: '1rem'
+              }}>
+                <div>
+                  <div className="flex items-center gap-2" style={{ marginBottom: '0.2rem' }}>
+                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#000', background: '#dfba52', padding: '0.15rem 0.5rem', borderRadius: '12px' }}>
+                      20% DE DESCONTO
+                    </span>
+                    <strong style={{ fontSize: '0.95rem', color: '#fff' }}>Associado TJAEM Brasil</strong>
+                  </div>
+                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>
+                    Possui carteirinha de Associado? Ative para aplicar o desconto na próxima etapa.
+                  </p>
+                </div>
+
+                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
+                  <input
+                    type="checkbox"
+                    checked={isAssociate}
+                    onChange={(e) => setIsAssociate(e.target.checked)}
+                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#4ade80' }}
+                  />
+                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: isAssociate ? '#4ade80' : 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>
+                    {isAssociate ? 'Ativado (-20%)' : 'Sou Associado'}
+                  </span>
+                </label>
+              </div>
+
               <button 
                 type="submit" 
                 className="btn-primary btn-full" 
@@ -920,10 +959,16 @@ export default function Home() {
                   display: 'inline-block'
                 }}>
                   {selectedTicketType === 'ESTUDANTE' 
-                    ? '🎓 Estudante de Direito • R$ 150,00'
+                    ? isAssociate 
+                      ? '🎓 Estudante • De R$ 150 por R$ 120,00 (-20%)' 
+                      : '🎓 Estudante de Direito • R$ 150,00'
                     : selectedTicketType === 'PADRAO'
-                    ? '✓ Ingresso Padrão • R$ 280,00'
-                    : '★ Kit Aniversário 30 Anos • R$ 427,00'}
+                    ? isAssociate
+                      ? '✓ Padrão • De R$ 280 por R$ 224,00 (-20%)'
+                      : '✓ Ingresso Padrão • R$ 280,00'
+                    : isAssociate
+                      ? '★ Kit Aniversário • De R$ 427 por R$ 341,60 (-20%)'
+                      : '★ Kit Aniversário 30 Anos • R$ 427,00'}
                 </span>
               </button>
               <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.6rem' }}>

@@ -117,20 +117,28 @@ export async function POST(req: Request) {
     const ticketCount = attendees.length;
     // Tipos de ingressos: 'ESTUDANTE' (R$ 150), 'PADRAO' (R$ 280), 'VIP' / 'KIT_ANIVERSARIO' (R$ 427)
     const ticketType = body.ticketType || 'VIP';
+    const isAssociate = Boolean(body.isAssociate);
+    const associateRegistration = body.associateRegistration ? String(body.associateRegistration).trim() : null;
+    const associateDocUrl = body.associateDocUrl ? String(body.associateDocUrl).trim() : null;
     
-    let unitPrice = 280.00;
+    let baseUnitPrice = 280.00;
     let ticketTypeName = 'Ingresso Padrão';
     
     if (ticketType === 'ESTUDANTE') {
-      unitPrice = 150.00;
+      baseUnitPrice = 150.00;
       ticketTypeName = 'Ingresso Estudante de Direito';
     } else if (ticketType === 'VIP' || ticketType === 'KIT_ANIVERSARIO') {
-      unitPrice = 427.00;
+      baseUnitPrice = 427.00;
       ticketTypeName = 'Kit Aniversário 30 Anos Arbitragem e Mediação (VIP)';
     } else {
-      unitPrice = 280.00;
+      baseUnitPrice = 280.00;
       ticketTypeName = 'Ingresso Padrão';
     }
+
+    // Aplicação de 20% de Desconto para Associados TJAEM Brasil
+    const discountRate = isAssociate ? 0.20 : 0.0;
+    const unitDiscount = isAssociate ? Math.round(baseUnitPrice * discountRate * 100) / 100 : 0;
+    const unitPrice = baseUnitPrice - unitDiscount;
 
     const totalAmount = ticketCount * unitPrice;
 
@@ -139,7 +147,7 @@ export async function POST(req: Request) {
       billingType: paymentMethod, // PIX, CREDIT_CARD, BOLETO
       value: totalAmount,
       dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Vence em +1 dia
-      description: `${ticketTypeName} - 30 Anos Arbitragem e Mediação (${ticketCount} ${ticketCount > 1 ? 'ingressos' : 'ingresso'})`
+      description: `${ticketTypeName}${isAssociate ? ' [Associado TJAEM 20% OFF]' : ''} - 30 Anos Arbitragem e Mediação (${ticketCount} ${ticketCount > 1 ? 'ingressos' : 'ingresso'})`
     };
 
     const chargeRes = await fetch(`${asaasUrl}/payments`, {
@@ -201,7 +209,12 @@ export async function POST(req: Request) {
           paymentMethod: paymentMethod,
           amount: unitPrice,
           ticketType: ticketType,
-          status: 'PENDING' // Fica PENDENTE até o pagamento ser confirmado!
+          status: 'PENDING', // Fica PENDENTE até o pagamento ser confirmado!
+          isAssociate: isAssociate,
+          associateRegistration: isAssociate ? (attendee.associateRegistration || associateRegistration) : null,
+          associateDocUrl: isAssociate ? (attendee.associateDocUrl || associateDocUrl) : null,
+          associateApproved: false, // Aprovação manual do admin pós-pagamento
+          discountAmount: unitDiscount
         }
       });
 
@@ -209,7 +222,9 @@ export async function POST(req: Request) {
         id: ticket.id,
         name: attendeeUser.name,
         cpf: attendeeUser.cpf,
-        email: attendeeUser.email
+        email: attendeeUser.email,
+        isAssociate: ticket.isAssociate,
+        associateApproved: ticket.associateApproved
       });
     }
 

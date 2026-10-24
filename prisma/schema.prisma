@@ -33,6 +33,12 @@ model Ticket {
   scanned       Boolean  @default(false)
   scannedAt     DateTime?
   pdfUrl        String?
+  // Campos de Desconto para Associados TJAEM Brasil (20%)
+  isAssociate          Boolean   @default(false)
+  associateRegistration String?
+  associateDocUrl      String?
+  associateApproved    Boolean   @default(false) // Aprovação manual do admin após pagamento
+  discountAmount       Float     @default(0)
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 }

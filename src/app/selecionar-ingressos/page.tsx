@@ -3,7 +3,7 @@
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
-import { ArrowLeft, Calendar, MapPin, Ticket, Users, ShieldCheck, CheckCircle2, CreditCard, QrCode, FileText } from 'lucide-react';
+import { ArrowLeft, Calendar, MapPin, Ticket, Users, ShieldCheck, CheckCircle2, CreditCard, QrCode, FileText, Award, UploadCloud, Check } from 'lucide-react';
 
 interface Attendee {
   name: string;
@@ -30,11 +30,22 @@ export default function SelecionarIngressosPage() {
   const [paymentMethod, setPaymentMethod] = useState<'PIX' | 'CREDIT_CARD' | 'BOLETO'>('PIX');
   const [loading, setLoading] = useState(false);
 
-  const pricePerTicket = ticketType === 'ESTUDANTE' 
+  // Desconto Associado TJAEM Brasil (20%)
+  const [isAssociate, setIsAssociate] = useState(false);
+  const [associateRegistration, setAssociateRegistration] = useState('');
+  const [associateDocUrl, setAssociateDocUrl] = useState('');
+  const [uploadingDoc, setUploadingDoc] = useState(false);
+  const [docFileName, setDocFileName] = useState('');
+
+  const basePricePerTicket = ticketType === 'ESTUDANTE' 
     ? 150.00 
     : ticketType === 'VIP' 
     ? 427.00 
     : 280.00;
+
+  const discountRate = isAssociate ? 0.20 : 0.0;
+  const unitDiscount = isAssociate ? Math.round(basePricePerTicket * discountRate * 100) / 100 : 0;
+  const pricePerTicket = basePricePerTicket - unitDiscount;
 
   // Carregar dados salvos da página anterior
   useEffect(() => {
@@ -50,6 +61,11 @@ export default function SelecionarIngressosPage() {
         if (parsed.ticketType) {
           setTicketType(parsed.ticketType);
         }
+        if (parsed.isAssociate) {
+          setIsAssociate(true);
+          if (parsed.associateRegistration) setAssociateRegistration(parsed.associateRegistration);
+          if (parsed.associateDocUrl) setAssociateDocUrl(parsed.associateDocUrl);
+        }
 
         // Preenche o participante 1 por padrão
         setAttendees([
@@ -64,6 +80,43 @@ export default function SelecionarIngressosPage() {
       console.error(e);
     }
   }, []);
+
+  // Upload da Foto da Carteirinha do Associado TJAEM
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (!file.type.startsWith('image/')) {
+      alert('Por favor, selecione uma imagem válida (JPG, PNG ou WEBP) da carteirinha.');
+      return;
+    }
+
+    setUploadingDoc(true);
+    setDocFileName(file.name);
+
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+
+      const res = await fetch('/api/upload-carteirinha', {
+        method: 'POST',
+        body: formData
+      });
+
+      const data = await res.json();
+      if (res.ok && data.url) {
+        setAssociateDocUrl(data.url);
+      } else {
+        alert(data.error || 'Erro ao enviar a imagem da carteirinha.');
+        setDocFileName('');
+      }
+    } catch (err) {
+      alert('Erro de conexão ao enviar a foto da carteirinha.');
+      setDocFileName('');
+    } finally {
+      setUploadingDoc(false);
+    }
+  };
 
   // Atualizar a lista de participantes quando a quantidade muda
   const handleQuantityChange = (newQty: number) => {
@@ -110,6 +163,20 @@ export default function SelecionarIngressosPage() {
         return;
       }
 
+      // Validar requisitos de Associado se selecionado
+      if (isAssociate) {
+        if (!associateRegistration.trim()) {
+          alert('Por favor, informe o seu número de matrícula de Associado TJAEM Brasil para obter o desconto de 20%.');
+          setLoading(false);
+          return;
+        }
+        if (!associateDocUrl) {
+          alert('Por favor, anexe a foto da sua carteirinha de Associado TJAEM Brasil para validação manual.');
+          setLoading(false);
+          return;
+        }
+      }
+
       // Validar participantes
       for (let i = 0; i < attendees.length; i++) {
         const att = attendees[i];
@@ -130,7 +197,10 @@ export default function SelecionarIngressosPage() {
         },
         ticketType: ticketType,
         attendees: attendees,
-        paymentMethod: paymentMethod
+        paymentMethod: paymentMethod,
+        isAssociate: isAssociate,
+        associateRegistration: isAssociate ? associateRegistration.trim() : null,
+        associateDocUrl: isAssociate ? associateDocUrl : null
       };
 
       const res = await fetch('/api/checkout', {
@@ -143,7 +213,11 @@ export default function SelecionarIngressosPage() {
 
       if (res.ok && result.success) {
         // Armazenar os detalhes do pagamento para a tela de confirmação
-        sessionStorage.setItem('tjaem_last_payment', JSON.stringify(result));
+        sessionStorage.setItem('tjaem_last_payment', JSON.stringify({
+          ...result,
+          isAssociate,
+          associateRegistration
+        }));
         
         // Se houver URL externa e não for PIX nativo, abre a tela do Asaas
         if (result.paymentUrl && paymentMethod !== 'PIX') {
@@ -163,6 +237,8 @@ export default function SelecionarIngressosPage() {
   };
 
   const total = quantity * pricePerTicket;
+  const originalTotal = quantity * basePricePerTicket;
+  const totalSavings = originalTotal - total;
 
   return (
     <main className="container" style={{ padding: '3rem 1rem 6rem', maxWidth: '850px' }}>
@@ -195,9 +271,20 @@ export default function SelecionarIngressosPage() {
           </div>
           <div style={{ textAlign: 'right', minWidth: '160px' }}>
             <span style={{ fontSize: '0.9rem', color: 'rgba(255,255,255,0.7)' }}>Valor Unitário:</span>
-            <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
-              R$ {pricePerTicket.toFixed(2).replace('.', ',')} <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}>/ un.</span>
-            </div>
+            {isAssociate ? (
+              <div>
+                <div style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.5)', textDecoration: 'line-through' }}>
+                  R$ {basePricePerTicket.toFixed(2).replace('.', ',')}
+                </div>
+                <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#4ade80' }}>
+                  R$ {pricePerTicket.toFixed(2).replace('.', ',')} <span style={{ fontSize: '0.8rem', fontWeight: 700, background: 'rgba(74, 222, 128, 0.2)', padding: '0.15rem 0.5rem', borderRadius: '12px', verticalAlign: 'middle' }}>-20%</span>
+                </div>
+              </div>
+            ) : (
+              <div style={{ fontSize: '1.8rem', fontWeight: 700, color: '#fff' }}>
+                R$ {pricePerTicket.toFixed(2).replace('.', ',')} <span style={{ fontSize: '0.9rem', fontWeight: 400, color: 'rgba(255,255,255,0.6)' }}>/ un.</span>
+              </div>
+            )}
           </div>
         </div>
 
@@ -352,6 +439,160 @@ export default function SelecionarIngressosPage() {
               R$ {total.toFixed(2).replace('.', ',')}
             </span>
           </div>
+        </section>
+
+        {/* Etapa de Benefício de Associado TJAEM Brasil (20% OFF) */}
+        <section className="glass-panel" style={{ 
+          padding: '2rem', 
+          border: isAssociate ? '2px solid #4ade80' : '1px solid rgba(223, 186, 82, 0.3)',
+          background: isAssociate ? 'linear-gradient(to bottom right, rgba(74, 222, 128, 0.08), rgba(4, 8, 18, 0.95))' : 'var(--glass-bg)',
+          transition: 'all 0.3s ease'
+        }}>
+          <div className="flex items-center justify-between mobile-col gap-4" style={{ marginBottom: isAssociate ? '1.5rem' : '0' }}>
+            <div style={{ flex: 1 }}>
+              <div className="flex items-center gap-2" style={{ marginBottom: '0.4rem' }}>
+                <span style={{ 
+                  background: 'linear-gradient(135deg, #dfba52, #ffeca8)', 
+                  color: '#000', 
+                  fontSize: '0.75rem', 
+                  fontWeight: 800, 
+                  padding: '0.2rem 0.65rem', 
+                  borderRadius: '20px',
+                  letterSpacing: '0.5px'
+                }}>
+                  BENEFÍCIO EXCLUSIVO
+                </span>
+                <span style={{ background: 'rgba(74, 222, 128, 0.2)', color: '#4ade80', fontSize: '0.75rem', fontWeight: 700, padding: '0.2rem 0.65rem', borderRadius: '20px' }}>
+                  20% DE DESCONTO
+                </span>
+              </div>
+              <h2 style={{ fontSize: '1.35rem', color: '#fff', margin: 0, display: 'flex', alignItems: 'center', gap: '0.6rem' }}>
+                <Award size={22} color="var(--primary)" />
+                Você é Associado TJAEM Brasil?
+              </h2>
+              <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', margin: '0.4rem 0 0' }}>
+                Membros associados ativos possuem <strong>20% de desconto</strong> no valor total. Sujeito à conferência da carteirinha.
+              </p>
+            </div>
+
+            {/* Switch / Checkbox de Ativação */}
+            <div>
+              <label 
+                style={{ 
+                  display: 'inline-flex', 
+                  alignItems: 'center', 
+                  gap: '0.75rem', 
+                  cursor: 'pointer',
+                  background: isAssociate ? 'rgba(74, 222, 128, 0.2)' : 'rgba(255,255,255,0.06)',
+                  border: isAssociate ? '1px solid #4ade80' : '1px solid rgba(255,255,255,0.2)',
+                  padding: '0.7rem 1.2rem',
+                  borderRadius: '30px',
+                  transition: 'all 0.2s ease',
+                  userSelect: 'none'
+                }}
+              >
+                <input
+                  type="checkbox"
+                  checked={isAssociate}
+                  onChange={(e) => setIsAssociate(e.target.checked)}
+                  style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#4ade80' }}
+                />
+                <span style={{ fontWeight: 700, color: isAssociate ? '#4ade80' : '#fff', fontSize: '0.95rem' }}>
+                  {isAssociate ? '✓ Desconto Aplicado (-20%)' : 'Sim, sou Associado'}
+                </span>
+              </label>
+            </div>
+          </div>
+
+          {/* Campos condicionais: Matrícula e Upload da Carteirinha */}
+          {isAssociate && (
+            <div className="animate-fade-in" style={{ borderTop: '1px solid rgba(74, 222, 128, 0.2)', paddingTop: '1.5rem', marginTop: '1rem' }}>
+              <div className="grid grid-cols-2 gap-4 mobile-col">
+                
+                {/* Campo Matrícula */}
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#ffeca8', marginBottom: '0.4rem', display: 'block', fontWeight: 600 }}>
+                    Número da Matrícula de Associado TJAEM *
+                  </label>
+                  <input
+                    type="text"
+                    className="input-field"
+                    placeholder="Ex: TJAEM-12345"
+                    value={associateRegistration}
+                    onChange={(e) => setAssociateRegistration(e.target.value)}
+                    required={isAssociate}
+                    style={{ borderColor: 'rgba(74, 222, 128, 0.4)' }}
+                  />
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.3rem', display: 'block' }}>
+                    Consta no verso da sua carteirinha ou no seu portal do associado.
+                  </span>
+                </div>
+
+                {/* Upload da Foto da Carteirinha */}
+                <div>
+                  <label style={{ fontSize: '0.85rem', color: '#ffeca8', marginBottom: '0.4rem', display: 'block', fontWeight: 600 }}>
+                    Foto da Carteirinha do Associado *
+                  </label>
+                  
+                  <div style={{ position: 'relative' }}>
+                    <input
+                      type="file"
+                      accept="image/*"
+                      id="carteirinhaUpload"
+                      onChange={handleFileUpload}
+                      style={{ display: 'none' }}
+                      required={isAssociate && !associateDocUrl}
+                    />
+                    <label
+                      htmlFor="carteirinhaUpload"
+                      className="input-field"
+                      style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'space-between',
+                        cursor: 'pointer',
+                        borderColor: associateDocUrl ? '#4ade80' : 'rgba(74, 222, 128, 0.4)',
+                        background: associateDocUrl ? 'rgba(74, 222, 128, 0.1)' : 'rgba(0,0,0,0.3)',
+                        padding: '0.75rem 1rem'
+                      }}
+                    >
+                      <span style={{ fontSize: '0.85rem', color: associateDocUrl ? '#4ade80' : 'rgba(255,255,255,0.8)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', maxWidth: '240px' }}>
+                        {uploadingDoc 
+                          ? 'Enviando imagem...' 
+                          : associateDocUrl 
+                          ? `✓ Carteirinha Anexada (${docFileName || 'foto'})` 
+                          : 'Clique para anexar foto (JPG/PNG)'}
+                      </span>
+                      <UploadCloud size={18} color={associateDocUrl ? '#4ade80' : 'var(--primary)'} />
+                    </label>
+                  </div>
+
+                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.3rem', display: 'block' }}>
+                    Tire uma foto nítida da sua carteirinha física ou digital.
+                  </span>
+                </div>
+
+              </div>
+
+              {/* Informação sobre Aprovação Manual pós-pagamento */}
+              <div style={{
+                marginTop: '1.2rem',
+                background: 'rgba(0, 0, 0, 0.35)',
+                border: '1px solid rgba(223, 186, 82, 0.3)',
+                borderRadius: '10px',
+                padding: '0.9rem 1.2rem',
+                display: 'flex',
+                alignItems: 'center',
+                gap: '0.8rem'
+              }}>
+                <ShieldCheck size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
+                <p style={{ margin: 0, fontSize: '0.85rem', color: 'rgba(255, 255, 255, 0.85)', lineHeight: 1.4 }}>
+                  <strong>Aviso de Aprovação Manual:</strong> Após a confirmação do pagamento, os dados da matrícula e a foto da carteirinha serão verificados e aprovados manualmente pela administração do TJAEM Brasil para liberação do QR Code.
+                </p>
+              </div>
+
+            </div>
+          )}
         </section>
 
         {/* Etapa 3: Dados dos Participantes */}
@@ -550,14 +791,28 @@ export default function SelecionarIngressosPage() {
         </section>
 
         {/* Resumo Final e Botão de Ação */}
-        <div className="glass-panel text-center" style={{ padding: '2rem', border: '1px solid var(--primary)' }}>
+        <div className="glass-panel text-center" style={{ padding: '2rem', border: isAssociate ? '2px solid #4ade80' : '1px solid var(--primary)' }}>
           <div className="flex items-center justify-between mobile-col gap-4" style={{ marginBottom: '1.5rem' }}>
             <div style={{ textAlign: 'left' }}>
               <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>Total da Compra:</span>
-              <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1.1 }}>
-                R$ {total.toFixed(2).replace('.', ',')}
-              </div>
-              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)' }}>
+              {isAssociate && totalSavings > 0 ? (
+                <div>
+                  <div style={{ fontSize: '1.1rem', color: 'rgba(255,255,255,0.45)', textDecoration: 'line-through' }}>
+                    R$ {originalTotal.toFixed(2).replace('.', ',')}
+                  </div>
+                  <div style={{ fontSize: '2.4rem', fontWeight: 800, color: '#4ade80', lineHeight: 1.1 }}>
+                    R$ {total.toFixed(2).replace('.', ',')}
+                  </div>
+                  <span style={{ fontSize: '0.85rem', color: '#4ade80', fontWeight: 700, display: 'inline-block', marginTop: '0.2rem' }}>
+                    ✓ Você economizou R$ {totalSavings.toFixed(2).replace('.', ',')} (Desconto Associado 20%)
+                  </span>
+                </div>
+              ) : (
+                <div style={{ fontSize: '2.4rem', fontWeight: 800, color: 'var(--primary)', lineHeight: 1.1 }}>
+                  R$ {total.toFixed(2).replace('.', ',')}
+                </div>
+              )}
+              <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', display: 'block', marginTop: '0.2rem' }}>
                 {quantity} {quantity > 1 ? 'credenciais oficiais' : 'credencial oficial'}
               </span>
             </div>
