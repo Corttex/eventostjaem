@@ -117,6 +117,34 @@ export default function AdminPage() {
     setIsAuthenticated(false);
   };
 
+  const handleConfirmPaymentManual = async (ticketId: string, asaasPaymentId?: string | null) => {
+    if (!confirm('Deseja confirmar manualmente o pagamento deste ingresso? O participante terá seu ingresso liberado imediatamente.')) {
+      return;
+    }
+    setActionLoadingId(ticketId);
+    try {
+      const res = await fetch('/api/admin/confirm-payment', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ ticketId, paymentId: asaasPaymentId })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        alert('Pagamento confirmado com sucesso! Ingresso liberado.');
+        fetchTickets();
+        if (selectedTicket && selectedTicket.id === ticketId) {
+          setSelectedTicket(prev => prev ? { ...prev, status: 'PAID' } : null);
+        }
+      } else {
+        alert(data.error || 'Erro ao confirmar pagamento.');
+      }
+    } catch (e) {
+      alert('Erro de conexão ao confirmar pagamento.');
+    } finally {
+      setActionLoadingId(null);
+    }
+  };
+
   const handleApproveAssociate = async (ticketId: string, approved: boolean) => {
     setActionLoadingId(ticketId);
     try {
@@ -617,19 +645,62 @@ export default function AdminPage() {
                             ✓ PAGO / APROVADO
                           </span>
                         ) : (
-                          <span style={{ 
-                            background: 'rgba(250, 204, 21, 0.15)', 
-                            color: '#facc15', 
-                            padding: '0.3rem 0.75rem', 
-                            borderRadius: '12px', 
-                            fontSize: '0.75rem', 
-                            fontWeight: 800,
-                            display: 'inline-flex',
-                            alignItems: 'center',
-                            gap: '0.3rem'
-                          }}>
-                            <Clock size={12} /> AGUARDANDO
-                          </span>
+                          <div className="flex flex-col gap-1">
+                            <span style={{ 
+                              background: 'rgba(250, 204, 21, 0.15)', 
+                              color: '#facc15', 
+                              padding: '0.3rem 0.75rem', 
+                              borderRadius: '12px', 
+                              fontSize: '0.75rem', 
+                              fontWeight: 800,
+                              display: 'inline-flex',
+                              alignItems: 'center',
+                              gap: '0.3rem',
+                              width: 'fit-content'
+                            }}>
+                              <Clock size={12} /> AGUARDANDO
+                            </span>
+                            
+                            {/* Se tiver comprovante anexado ou for PIX */}
+                            <div className="flex gap-1 items-center flex-wrap" style={{ marginTop: '0.2rem' }}>
+                              {ticket.associateDocUrl && (
+                                <a
+                                  href={ticket.associateDocUrl}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  style={{
+                                    background: 'rgba(223, 186, 82, 0.2)',
+                                    border: '1px solid var(--primary)',
+                                    color: '#ffeca8',
+                                    padding: '0.2rem 0.5rem',
+                                    borderRadius: '4px',
+                                    fontSize: '0.7rem',
+                                    fontWeight: 700,
+                                    textDecoration: 'none'
+                                  }}
+                                >
+                                  Ver Comprovante
+                                </a>
+                              )}
+                              <button
+                                onClick={() => handleConfirmPaymentManual(ticket.id, ticket.asaasPaymentId)}
+                                disabled={actionLoadingId === ticket.id}
+                                style={{
+                                  background: '#4ade80',
+                                  color: '#000',
+                                  border: 'none',
+                                  padding: '0.2rem 0.5rem',
+                                  borderRadius: '4px',
+                                  fontSize: '0.7rem',
+                                  fontWeight: 800,
+                                  cursor: 'pointer'
+                                }}
+                                title="Confirmar pagamento manualmente"
+                              >
+                                {actionLoadingId === ticket.id ? 'Aprovando...' : 'Aprovar'}
+                              </button>
+                            </div>
+                          </div>
                         )}
                       </td>
 
@@ -730,10 +801,36 @@ export default function AdminPage() {
               <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>Configuração:</span> <strong style={{ color: 'var(--primary)' }}>{selectedTicket.ticketType || 'INGRESSO_UNICO'}</strong></div>
               <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>Valor Total:</span> <strong>R$ {(selectedTicket.amount || 0).toFixed(2)} ({selectedTicket.paymentMethod || 'PIX'})</strong></div>
               <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>Status do Pagamento:</span> <strong style={{ color: selectedTicket.status === 'PAID' ? '#4ade80' : '#facc15' }}>{selectedTicket.status}</strong></div>
+              {selectedTicket.associateDocUrl && (
+                <div>
+                  <span style={{ color: 'rgba(255,255,255,0.6)' }}>Comprovante / Anexo:</span>{' '}
+                  <a href={selectedTicket.associateDocUrl} target="_blank" rel="noopener noreferrer" style={{ color: '#ffeca8', textDecoration: 'underline', fontWeight: 700 }}>
+                    Visualizar Arquivo Anexado
+                  </a>
+                </div>
+              )}
               <div><span style={{ color: 'rgba(255,255,255,0.6)' }}>Portaria Versá:</span> <strong>{selectedTicket.scanned ? '✓ Entrada Realizada' : 'Pendente de Check-in'}</strong></div>
             </div>
 
-            <div className="flex gap-3" style={{ marginTop: '1.8rem' }}>
+            <div className="flex gap-3" style={{ marginTop: '1.8rem', flexWrap: 'wrap' }}>
+              {selectedTicket.status !== 'PAID' && (
+                <button
+                  onClick={() => handleConfirmPaymentManual(selectedTicket.id, selectedTicket.asaasPaymentId)}
+                  disabled={actionLoadingId === selectedTicket.id}
+                  style={{
+                    background: '#4ade80',
+                    color: '#000',
+                    border: 'none',
+                    padding: '0.8rem 1.4rem',
+                    borderRadius: '8px',
+                    fontWeight: 800,
+                    cursor: 'pointer',
+                    flex: 1
+                  }}
+                >
+                  {actionLoadingId === selectedTicket.id ? 'Aprovando...' : '✓ Aprovar Pagamento Manualmente'}
+                </button>
+              )}
               <Link
                 href={`/api/ticket/${selectedTicket.id}`}
                 target="_blank"

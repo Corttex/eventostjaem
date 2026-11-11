@@ -3,7 +3,7 @@
 import { useEffect, useState } from 'react';
 import { useParams, useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { CheckCircle2, Clock, FileText, QrCode, Copy, ExternalLink, RefreshCw, AlertCircle, ArrowLeft, Download } from 'lucide-react';
+import { CheckCircle2, Clock, FileText, QrCode, Copy, ExternalLink, RefreshCw, AlertCircle, ArrowLeft, Download, UploadCloud, Check } from 'lucide-react';
 
 interface TicketInfo {
   id: string;
@@ -14,6 +14,7 @@ interface TicketInfo {
   isAssociate?: boolean;
   associateApproved?: boolean;
   associateRegistration?: string | null;
+  associateDocUrl?: string | null;
 }
 
 export default function SucessoPage() {
@@ -28,6 +29,11 @@ export default function SucessoPage() {
   const [paymentDetails, setPaymentDetails] = useState<any>(null);
   const [copied, setCopied] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // Upload de Comprovante PIX
+  const [uploadingReceipt, setUploadingReceipt] = useState(false);
+  const [receiptSuccess, setReceiptSuccess] = useState(false);
+  const [receiptUrl, setReceiptUrl] = useState<string | null>(null);
 
   // Carregar dados salvos da última transação (caso PIX direto)
   useEffect(() => {
@@ -56,6 +62,11 @@ export default function SucessoPage() {
         
         if (data.tickets && data.tickets.length > 0) {
           setTickets(data.tickets);
+          const firstDoc = data.tickets.find((t: any) => t.associateDocUrl)?.associateDocUrl;
+          if (firstDoc) {
+            setReceiptUrl(firstDoc);
+            setReceiptSuccess(true);
+          }
         }
 
         if (data.paid || data.status === 'RECEIVED' || data.status === 'CONFIRMED') {
@@ -102,6 +113,47 @@ export default function SucessoPage() {
       navigator.clipboard.writeText(code);
       setCopied(true);
       setTimeout(() => setCopied(false), 3000);
+    }
+  };
+
+  const handleReceiptUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 10 * 1024 * 1024) {
+      alert('O arquivo deve ter no máximo 10MB.');
+      return;
+    }
+
+    setUploadingReceipt(true);
+    try {
+      const formData = new FormData();
+      formData.append('file', file);
+      if (id.startsWith('pay_')) {
+        formData.append('paymentId', id);
+      } else {
+        formData.append('ticketId', id);
+      }
+
+      const res = await fetch('/api/upload-comprovante', {
+        method: 'POST',
+        body: formData
+      });
+
+      if (res.ok) {
+        const data = await res.json();
+        setReceiptUrl(data.url);
+        setReceiptSuccess(true);
+        alert('Comprovante enviado com sucesso! O Administrador poderá conferir no painel.');
+        checkStatus(false);
+      } else {
+        const err = await res.json();
+        alert(err?.error || 'Erro ao enviar comprovante.');
+      }
+    } catch (err) {
+      alert('Erro de conexão ao enviar comprovante.');
+    } finally {
+      setUploadingReceipt(false);
     }
   };
 
@@ -251,6 +303,56 @@ export default function SucessoPage() {
               <p style={{ margin: '0.6rem 0 0', fontSize: '0.8rem', color: 'rgba(255,255,255,0.5)' }}>
                 Esta tela atualiza automaticamente assim que o pagamento for detectado.
               </p>
+            </div>
+
+            {/* SEÇÃO DE UPLOAD DO COMPROVANTE PIX */}
+            <div style={{ 
+              marginTop: '1.5rem', 
+              background: 'rgba(223, 186, 82, 0.06)', 
+              border: '1px dashed var(--primary)', 
+              borderRadius: '12px', 
+              padding: '1.2rem',
+              textAlign: 'center'
+            }}>
+              <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem', marginBottom: '0.4rem', color: '#ffeca8', fontWeight: 700, fontSize: '0.98rem' }}>
+                <UploadCloud size={20} color="var(--primary)" />
+                <span>Anexar Comprovante do PIX</span>
+              </div>
+              <p style={{ fontSize: '0.82rem', color: 'rgba(255,255,255,0.7)', marginBottom: '0.9rem', lineHeight: 1.4 }}>
+                Caso deseje agilizar a conferência manual pela administração do TJAEM, envie a foto ou PDF do comprovante aqui:
+              </p>
+
+              {receiptSuccess && receiptUrl ? (
+                <div style={{ background: 'rgba(74, 222, 128, 0.15)', border: '1px solid #4ade80', borderRadius: '8px', padding: '0.7rem', color: '#4ade80', fontSize: '0.85rem', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: '0.5rem' }}>
+                  <Check size={18} />
+                  <span>Comprovante anexado! Aguardando conferência ou baixa do Asaas.</span>
+                </div>
+              ) : (
+                <label style={{
+                  display: 'inline-flex',
+                  alignItems: 'center',
+                  gap: '0.5rem',
+                  padding: '0.65rem 1.4rem',
+                  background: 'rgba(255,255,255,0.1)',
+                  border: '1px solid rgba(255,255,255,0.2)',
+                  borderRadius: '8px',
+                  color: '#fff',
+                  cursor: uploadingReceipt ? 'not-allowed' : 'pointer',
+                  fontSize: '0.85rem',
+                  fontWeight: 600,
+                  transition: 'all 0.2s'
+                }}>
+                  <UploadCloud size={16} />
+                  {uploadingReceipt ? 'Enviando comprovante...' : 'Selecionar Comprovante (Imagem ou PDF)'}
+                  <input
+                    type="file"
+                    accept="image/*,application/pdf"
+                    onChange={handleReceiptUpload}
+                    disabled={uploadingReceipt}
+                    style={{ display: 'none' }}
+                  />
+                </label>
+              )}
             </div>
           </div>
         )}
