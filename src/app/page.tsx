@@ -539,9 +539,9 @@ export default function Home() {
 
           {/* Dados de Endereço e Comodidades */}
           <div className="grid grid-cols-2 gap-4 mobile-col" style={{ marginBottom: '1.6rem' }}>
-            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '1.2rem', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div className="flex items-center gap-3" style={{ color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 700, fontSize: '0.9rem' }}>
-                <MapPin size={18} style={{ flexShrink: 0 }} />
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--primary)', marginBottom: '0.6rem', fontWeight: 700, fontSize: '0.95rem' }}>
+                <MapPin size={20} style={{ flexShrink: 0, marginRight: '0.4rem' }} />
                 <span>Endereço Completo</span>
               </div>
               <strong style={{ color: '#fff', fontSize: '1.05rem', display: 'block' }}>
@@ -552,9 +552,9 @@ export default function Home() {
               </p>
             </div>
 
-            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '1.2rem', border: '1px solid rgba(255,255,255,0.08)' }}>
-              <div className="flex items-center gap-3" style={{ color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 700, fontSize: '0.9rem' }}>
-                <Sparkles size={18} style={{ flexShrink: 0 }} />
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '1.25rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div style={{ display: 'flex', alignItems: 'center', gap: '0.75rem', color: 'var(--primary)', marginBottom: '0.6rem', fontWeight: 700, fontSize: '0.95rem' }}>
+                <Sparkles size={20} style={{ flexShrink: 0, marginRight: '0.4rem' }} />
                 <span>Estrutura & Comodidades</span>
               </div>
               <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem', lineHeight: 1.6 }}>
@@ -662,57 +662,57 @@ export default function Home() {
                 Itens Inclusos no seu Ingresso:
               </span>
 
-              <div className="grid grid-cols-2 gap-4 mobile-col">
-                <div className="flex items-start gap-3">
-                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
-                    <Award color="var(--primary)" size={18} />
+              <div className="grid grid-cols-2 gap-6 mobile-col">
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.1rem' }}>
+                  <div className="icon-badge" style={{ width: '40px', height: '40px', flexShrink: 0, marginRight: '0.35rem' }}>
+                    <Award color="var(--primary)" size={20} />
                   </div>
                   <div>
-                    <strong style={{ color: '#fff', fontSize: '0.98rem', display: 'block' }}>Entrega de Certificados Oficiais</strong>
-                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Certificado institucional com carga horária completa</span>
+                    <strong style={{ color: '#fff', fontSize: '1rem', display: 'block', marginBottom: '0.2rem' }}>Entrega de Certificados Oficiais</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.4, display: 'block' }}>Certificado institucional com carga horária completa</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
-                    <Shield color="var(--primary)" size={18} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.1rem' }}>
+                  <div className="icon-badge" style={{ width: '40px', height: '40px', flexShrink: 0, marginRight: '0.35rem' }}>
+                    <Shield color="var(--primary)" size={20} />
                   </div>
                   <div>
-                    <strong style={{ color: '#fff', fontSize: '0.98rem', display: 'block' }}>Credencial Oficial do Evento</strong>
-                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Identificação solene de participante</span>
+                    <strong style={{ color: '#fff', fontSize: '1rem', display: 'block', marginBottom: '0.2rem' }}>Credencial Oficial do Evento</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.4, display: 'block' }}>Identificação solene de participante</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
-                    <BookOpen color="var(--primary)" size={18} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.1rem' }}>
+                  <div className="icon-badge" style={{ width: '40px', height: '40px', flexShrink: 0, marginRight: '0.35rem' }}>
+                    <BookOpen color="var(--primary)" size={20} />
                   </div>
                   <div>
-                    <strong style={{ color: '#fff', fontSize: '0.98rem', display: 'block' }}>Apostila Oficial do Evento</strong>
-                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Material didático de apoio encadernado</span>
+                    <strong style={{ color: '#fff', fontSize: '1rem', display: 'block', marginBottom: '0.2rem' }}>Apostila Oficial do Evento</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.4, display: 'block' }}>Material didático de apoio encadernado</span>
                   </div>
                 </div>
 
-                <div className="flex items-start gap-3">
-                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
-                    <GraduationCap color="var(--primary)" size={18} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.1rem' }}>
+                  <div className="icon-badge" style={{ width: '40px', height: '40px', flexShrink: 0, marginRight: '0.35rem' }}>
+                    <GraduationCap color="var(--primary)" size={20} />
                   </div>
                   <div>
-                    <strong style={{ color: '#fff', fontSize: '0.98rem', display: 'block' }}>E-book Digital Exclusivo</strong>
-                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Obra doutrinária comemorativa dos 30 anos</span>
+                    <strong style={{ color: '#fff', fontSize: '1rem', display: 'block', marginBottom: '0.2rem' }}>E-book Digital Exclusivo</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem', lineHeight: 1.4, display: 'block' }}>Obra doutrinária comemorativa dos 30 anos</span>
                   </div>
                 </div>
 
                 {/* Destaque Café Quente e Água Mineral */}
-                <div className="flex items-start gap-3" style={{ gridColumn: 'span 2' }}>
-                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0, background: 'rgba(223, 186, 82, 0.25)' }}>
-                    <Coffee color="var(--primary)" size={18} />
+                <div style={{ display: 'flex', alignItems: 'flex-start', gap: '1.1rem', gridColumn: 'span 2', marginTop: '0.4rem' }}>
+                  <div className="icon-badge" style={{ width: '40px', height: '40px', flexShrink: 0, marginRight: '0.35rem', background: 'rgba(223, 186, 82, 0.25)' }}>
+                    <Coffee color="var(--primary)" size={20} />
                   </div>
                   <div>
-                    <strong style={{ color: '#ffeca8', fontSize: '1rem', display: 'block' }}>
+                    <strong style={{ color: '#ffeca8', fontSize: '1.05rem', display: 'block', marginBottom: '0.2rem' }}>
                       Água Mineral e Café Quente à Vontade o Dia Todo
                     </strong>
-                    <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.88rem' }}>
+                    <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.88rem', lineHeight: 1.5, display: 'block' }}>
                       Estações permanentes de café de alta qualidade e água disponíveis durante todo o evento (09h às 18h).
                     </span>
                   </div>
