@@ -1,12 +1,10 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import { PDFDocument, rgb, StandardFonts } from 'pdf-lib';
 import QRCode from 'qrcode';
 import { getAsaasApiKey } from '@/lib/asaas';
 import fs from 'fs';
 import path from 'path';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 // Função auxiliar para desenhar retângulos com bordas arredondadas nativamente
 function drawRoundedRect(page: any, { x, y, width, height, radius = 12, color }: { x: number; y: number; width: number; height: number; radius?: number; color: any }) {
@@ -319,7 +317,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       color: primaryGold,
     });
 
-    page.drawText('22 de Novembro de 2026 • Das 09h às 16h', {
+    page.drawText('01 de Dezembro de 2026 • Das 09h às 18h', {
       x: cardX + 20,
       y: card2Y + card2Height - 50,
       size: 12,
@@ -327,7 +325,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       color: textWhite,
     });
 
-    page.drawText('LBV (Parlamundi) • SGAS 603 / 915 Sul', {
+    page.drawText('Versá Restaurante & Eventos • SIBS Qd. 2, Cj. B, Lts. 3/5', {
       x: cardX + 20,
       y: card2Y + card2Height - 72,
       size: 11,
@@ -335,7 +333,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       color: textWhite,
     });
 
-    page.drawText('Asa Sul, Brasília / DF', {
+    page.drawText('Núcleo Bandeirante, Brasília / DF', {
       x: cardX + 20,
       y: card2Y + card2Height - 90,
       size: 11,

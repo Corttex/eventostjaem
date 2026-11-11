@@ -1,6 +1,10 @@
 'use client';
 import Link from 'next/link';
-import { Shield, BookOpen, GraduationCap, Award, CheckCircle2, MapPin, Calendar, X, Ticket, Coffee, Mic, ChevronLeft, ChevronRight } from 'lucide-react';
+import { 
+  Shield, BookOpen, GraduationCap, Award, CheckCircle2, MapPin, 
+  Calendar, X, Ticket, Coffee, Mic, ChevronLeft, ChevronRight, 
+  UtensilsCrossed, CreditCard, Sparkles, Navigation, Droplets, ExternalLink, Check
+} from 'lucide-react';
 import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 
@@ -11,36 +15,76 @@ export default function Home() {
   const [loginLoading, setLoginLoading] = useState(false);
   const [loginCpf, setLoginCpf] = useState('');
 
-  // Formulário e Seleção de Ingresso (ESTUDANTE, PADRAO ou VIP)
-  const [selectedTicketType, setSelectedTicketType] = useState<'ESTUDANTE' | 'PADRAO' | 'VIP'>('PADRAO');
-  const [activeKitIndex, setActiveKitIndex] = useState(0);
+  // Opcionais selecionados na Home
+  const [includeKit, setIncludeKit] = useState(false);
+  const [includeBuffet, setIncludeBuffet] = useState(false);
 
+  // Galeria de Fotos do Kit
+  const [activeKitIndex, setActiveKitIndex] = useState(0);
   const kitImages = [
-    { src: '/kit-vip/Asset 1.png', title: 'Kit VIP Completo', desc: 'Conjunto comemorativo oficial' },
+    { src: '/kit-vip/Asset 1.png', title: 'Kit Oficial Completo 30 Anos', desc: 'Conjunto comemorativo oficial de alto padrão' },
     { src: '/kit-vip/Asset 2.png', title: 'Caderno Moleskine & Caneta', desc: 'Acabamento premium exclusivo' },
-    { src: '/kit-vip/Asset 3.png', title: 'Caneca Institucional', desc: 'Porcelana comemorativa 30 anos' },
-    { src: '/kit-vip/Asset 4.png', title: 'Botton Metálico', desc: 'Insígnia oficial do evento' },
-    { src: '/kit-vip/Asset 5.png', title: 'Chaveiro Oficial', desc: 'Metal dourado gravado' },
-    { src: '/kit-vip/Asset 6.png', title: 'Suporte de Celular', desc: 'Design anatômico institucional' },
-    { src: '/kit-vip/Asset 7.png', title: 'Cordão & Crachá Especial', desc: 'Acesso VIP antecipado às 08h' }
+    { src: '/kit-vip/Asset 3.png', title: 'Caneca Institucional 30 Anos', desc: 'Porcelana nobre comemorativa' },
+    { src: '/kit-vip/Asset 4.png', title: 'Botton Metálico Oficial', desc: 'Insígnia dourada de distinção' },
+    { src: '/kit-vip/Asset 5.png', title: 'Chaveiro Oficial em Metal', desc: 'Metal dourado gravado a laser' },
+    { src: '/kit-vip/Asset 6.png', title: 'Suporte de Celular', desc: 'Design ergonômico institucional' },
+    { src: '/kit-vip/Asset 7.png', title: 'Cordão & Crachá Especial', desc: 'Crachá de gala e cordão personalizado' }
   ];
 
-  // Auto-play suave do carrossel a cada 3.5 segundos
+  // Galeria de Fotos do Local (Versá Restaurante & Eventos)
+  const [activeVenueIndex, setActiveVenueIndex] = useState(0);
+  const venueImages = [
+    { 
+      src: '/versa-salao-1.jpg', 
+      title: 'Salão Nobre do Evento — Versá', 
+      desc: 'Salão climatizado de alto padrão, equipado com mesas redondas, acústica profissional e iluminação cênica' 
+    },
+    { 
+      src: '/versa-foyer.jpg', 
+      title: 'Foyer Nobre de Recepção & Credenciamento', 
+      desc: 'Espaço amplo para recepção solene, entrega de credenciais, certificados e networking institucional' 
+    },
+    { 
+      src: '/versa-salao-2.jpg', 
+      title: 'Ambiente Panorâmico & Mesas do Seminário', 
+      desc: 'Infraestrutura completa com visão privilegiada do palco oficial e conforto térmico de última geração' 
+    },
+    { 
+      src: '/versa-salao-3.jpg', 
+      title: 'Espaço Corporativo & Estações de Café', 
+      desc: 'Amplo espaço corporativo com estações permanentes de água mineral e café quente durante todo o dia' 
+    }
+  ];
+
+  // Auto-play suave dos carrosséis
   useEffect(() => {
     const timer = setInterval(() => {
       setActiveKitIndex(prev => (prev + 1) % kitImages.length);
-    }, 3500);
+    }, 4000);
     return () => clearInterval(timer);
   }, [kitImages.length]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setActiveVenueIndex(prev => (prev + 1) % venueImages.length);
+    }, 5000);
+    return () => clearInterval(timer);
+  }, [venueImages.length]);
 
   const [buyerName, setBuyerName] = useState('');
   const [buyerEmail, setBuyerEmail] = useState('');
   const [buyerCpf, setBuyerCpf] = useState('');
   const [buyerPhone, setBuyerPhone] = useState('');
   const [buyerPassword, setBuyerPassword] = useState('');
-  const [isAssociate, setIsAssociate] = useState(false);
   const [cpfExists, setCpfExists] = useState(false);
   const [checkingCpf, setCheckingCpf] = useState(false);
+
+  // Preços
+  const BASE_PRICE = 490.00;
+  const KIT_PRICE = 109.90;
+  const BUFFET_PRICE = 139.90;
+  const totalPreview = BASE_PRICE + (includeKit ? KIT_PRICE : 0) + (includeBuffet ? BUFFET_PRICE : 0);
+  const installmentValue = (totalPreview / 10).toFixed(2).replace('.', ',');
 
   // Verificar se CPF já tem cadastro ao digitar/sair do campo
   const handleCpfBlur = async () => {
@@ -80,11 +124,11 @@ export default function Home() {
       cpf: buyerCpf,
       phone: buyerPhone,
       password: buyerPassword,
-      ticketType: selectedTicketType,
-      isAssociate: isAssociate
+      ticketType: 'UNICO',
+      hasKit: includeKit,
+      hasBuffet: includeBuffet
     };
     
-    // Salvar dados do comprador e tipo de ingresso na sessão
     sessionStorage.setItem('tjaem_buyer_data', JSON.stringify(data));
     router.push('/selecionar-ingressos');
   };
@@ -120,12 +164,12 @@ export default function Home() {
   return (
     <>
       <main className="container" style={{ paddingBottom: '5rem', overflow: 'hidden' }}>
-        <header className="flex flex-col items-center justify-center text-center hero-section animate-fade-up" style={{ padding: '4rem 0 4rem' }}>
+        <header className="flex flex-col items-center justify-center text-center hero-section animate-fade-up" style={{ padding: '3.5rem 0 3rem' }}>
           
           {/* Logos Section */}
           <div 
             className="flex gap-4 items-center justify-center animate-fade-in delay-100 mobile-col" 
-            style={{ marginBottom: '3rem', width: '100%', maxWidth: '580px' }}
+            style={{ marginBottom: '2.5rem', width: '100%', maxWidth: '580px' }}
           >
             <div 
               className="glass-panel flex items-center justify-center" 
@@ -161,35 +205,54 @@ export default function Home() {
             </div>
           </div>
 
-          <p style={{ textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '1.2rem', color: 'rgba(255,255,255,0.6)', fontWeight: 600, fontSize: '0.9rem' }}>
-            Convite Especial Oficial
+          <p style={{ textTransform: 'uppercase', letterSpacing: '4px', marginBottom: '1rem', color: 'rgba(255,255,255,0.7)', fontWeight: 600, fontSize: '0.88rem' }}>
+            Convite Especial Oficial • 30 Anos de Arbitragem
           </p>
-          <h1 className="gold-gradient-text animate-fade-in delay-100" style={{ fontSize: '3.2rem', marginBottom: '0.8rem', lineHeight: '1.2', letterSpacing: '1px' }}>
+          <h1 className="gold-gradient-text animate-fade-in delay-100" style={{ fontSize: '3.1rem', marginBottom: '0.8rem', lineHeight: '1.15', letterSpacing: '0.5px' }}>
             Seminário Nacional
           </h1>
-          <h2 className="animate-fade-in delay-200" style={{ fontSize: '1.85rem', marginBottom: '1.5rem', fontWeight: 600, letterSpacing: '0.5px', color: '#fff', maxWidth: '850px' }}>
+          <h2 className="animate-fade-in delay-200" style={{ fontSize: '1.75rem', marginBottom: '1.4rem', fontWeight: 600, letterSpacing: '0.3px', color: '#fff', maxWidth: '850px' }}>
             Em comemoração aos 30 anos da Arbitragem e Mediação no Brasil
           </h2>
-          <div className="animate-fade-in delay-300" style={{ maxWidth: '820px', margin: '0 auto 2.5rem', lineHeight: 1.8 }}>
-            <p style={{ fontSize: '1.2rem', color: 'rgba(255,255,255,0.9)', marginBottom: '1rem', fontWeight: 500 }}>
-              Uma oportunidade majestosa para celebrar três décadas de evolução dos métodos de solução de conflitos, diálogo e segurança jurídica no país.
+          <div className="animate-fade-in delay-300" style={{ maxWidth: '820px', margin: '0 auto 2.2rem', lineHeight: 1.75 }}>
+            <p style={{ fontSize: '1.15rem', color: 'rgba(255,255,255,0.92)', marginBottom: '0.8rem', fontWeight: 500 }}>
+              Uma celebração majestosa de três décadas de pioneirismo, segurança jurídica e pacificação de conflitos no país.
             </p>
-            <p style={{ fontSize: '1.05rem', color: 'rgba(255,255,255,0.72)', margin: '0 auto' }}>
-              Este encontro solene reúne magistrados, juristas, árbitros e líderes institucionais para homenagear os avanços trazidos pela Lei Federal nº 9.307/1996. Venha prestigiar palestras e debates de alto nível sobre a consolidação da arbitragem e mediação, o fortalecimento dos negócios e as novas perspectivas da justiça multiportas no Brasil.
+            <p style={{ fontSize: '1rem', color: 'rgba(255,255,255,0.72)', margin: '0 auto' }}>
+              Magistrados, árbitros, mediadores, advogados e lideranças institucionais reunidos no mais sofisticado complexo corporativo e gastronômico do DF para um dia histórico de debates sobre o futuro da justiça multiportas.
             </p>
           </div>
           
-          {/* Data e Local - Somente Ícones com Espaçamento Amplo */}
+          {/* Data e Local Oficiais Atualizados */}
           <div className="flex gap-6 items-center justify-center mobile-col animate-fade-up delay-300" style={{ marginBottom: '2.5rem', width: '100%', maxWidth: '850px' }}>
-            <div className="glass-panel flex flex-col items-center justify-center text-center" style={{ flex: 1, padding: '2rem 1.5rem' }}>
-              <Calendar color="var(--primary)" size={36} style={{ marginBottom: '1.2rem' }} />
-              <strong style={{ fontSize: '1.3rem', marginTop: '0.2rem', color: '#fff' }}>28 de Novembro de 2026</strong>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '0.95rem', color: 'rgba(255,255,255,0.75)' }}>Sábado • 9h às 16h (6h totais com intervalo de almoço)</p>
+            <div className="glass-panel flex flex-col items-center justify-center text-center" style={{ flex: 1, padding: '1.8rem 1.4rem', border: '1px solid rgba(223, 186, 82, 0.35)' }}>
+              <Calendar color="var(--primary)" size={36} style={{ marginBottom: '1rem' }} />
+              <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 700 }}>Data Oficial</span>
+              <strong style={{ fontSize: '1.35rem', marginTop: '0.2rem', color: '#fff' }}>01 de Dezembro de 2026</strong>
+              <p style={{ margin: '0.4rem 0 0', fontSize: '0.95rem', color: '#ffeca8', fontWeight: 600 }}>Terça-feira • 09h às 18h</p>
             </div>
-            <div className="glass-panel flex flex-col items-center justify-center text-center" style={{ flex: 1, padding: '2rem 1.5rem' }}>
-              <MapPin color="var(--primary)" size={36} style={{ marginBottom: '1.2rem' }} />
-              <strong style={{ fontSize: '1.3rem', marginTop: '0.2rem', color: '#fff' }}>LBV — Asa Sul, Brasília / DF</strong>
-              <p style={{ margin: '0.5rem 0 0', fontSize: '0.95rem', color: 'rgba(255,255,255,0.75)' }}>Parlamundi da LBV • SGAS 915 / 603 Sul, L2 Sul</p>
+            <div className="glass-panel flex flex-col items-center justify-center text-center" style={{ flex: 1, padding: '1.8rem 1.4rem', border: '1px solid rgba(223, 186, 82, 0.35)' }}>
+              <MapPin color="var(--primary)" size={36} style={{ marginBottom: '1rem' }} />
+              <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 700 }}>Local do Evento</span>
+              <strong style={{ fontSize: '1.35rem', marginTop: '0.2rem', color: '#fff' }}>Versá Restaurante & Eventos</strong>
+              <p style={{ margin: '0.4rem 0 0', fontSize: '0.9rem', color: 'rgba(255,255,255,0.85)' }}>
+                SIBS Qd. 2, Cj. B, Lts. 3/5 • Núcleo Bandeirante, DF
+              </p>
+            </div>
+          </div>
+
+          {/* Destaque das Facilidades Inclusas */}
+          <div 
+            className="flex flex-wrap items-center justify-center gap-4 animate-fade-up delay-350"
+            style={{ width: '100%', maxWidth: '850px', marginBottom: '2.2rem' }}
+          >
+            <div style={{ background: 'rgba(223, 186, 82, 0.12)', border: '1px solid var(--primary)', borderRadius: '30px', padding: '0.6rem 1.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', color: '#ffeca8', fontWeight: 600 }}>
+              <Droplets size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
+              <span>Água e Café Quente à vontade o dia todo</span>
+            </div>
+            <div style={{ background: 'rgba(255, 255, 255, 0.08)', border: '1px solid rgba(255, 255, 255, 0.2)', borderRadius: '30px', padding: '0.6rem 1.4rem', display: 'inline-flex', alignItems: 'center', gap: '0.75rem', fontSize: '0.9rem', color: '#fff', fontWeight: 600 }}>
+              <CreditCard size={18} color="var(--primary)" style={{ flexShrink: 0 }} />
+              <span>Até 10x sem Juros no Cartão ou PIX</span>
             </div>
           </div>
 
@@ -271,507 +334,700 @@ export default function Home() {
           </div>
 
           {/* Botões alinhados com espaçamento generoso */}
-          <div className="flex gap-8 mobile-col animate-fade-up delay-400" style={{ width: '100%', maxWidth: '850px', justifyContent: 'center', marginTop: '0.5rem' }}>
-            <Link href="#comprar" className="btn-primary" style={{ flex: 1 }}>
-              Garantir Minha Vaga
+          <div className="flex gap-6 mobile-col animate-fade-up delay-400" style={{ width: '100%', maxWidth: '850px', justifyContent: 'center', marginTop: '0.5rem' }}>
+            <Link 
+              href="#ingresso-unico" 
+              className="btn-primary" 
+              style={{ 
+                flex: 1, 
+                padding: '1.05rem 2rem', 
+                fontSize: '1.05rem', 
+                whiteSpace: 'nowrap', 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                justifyContent: 'center',
+                textAlign: 'center'
+              }}
+            >
+              Garantir Ingresso Único (R$ 490)
             </Link>
-            <button onClick={() => setLoginModalOpen(true)} className="btn-secondary" style={{ flex: 1, gap: '0.75rem' }}>
-              <Ticket size={20} />
-              Acessar Meu Ingresso
+            <button 
+              onClick={() => setLoginModalOpen(true)} 
+              className="btn-secondary" 
+              style={{ 
+                flex: 1, 
+                padding: '1.05rem 1.8rem', 
+                fontSize: '1.05rem', 
+                display: 'inline-flex', 
+                alignItems: 'center', 
+                justifyContent: 'center', 
+                gap: '0.75rem',
+                whiteSpace: 'nowrap'
+              }}
+            >
+              <Ticket size={20} style={{ flexShrink: 0 }} />
+              <span>Acessar Meu Ingresso</span>
             </button>
           </div>
         </header>
 
-        {/* Seção Tipos de Ingressos: Estudante e Padrão em 2 Colunas */}
-        <div className="grid grid-cols-2 gap-6" style={{ marginBottom: '1.8rem' }}>
-          
-          {/* 1. Ingresso Estudante de Direito - R$ 150,00 (50 vagas) */}
-          <div 
-            onClick={() => setSelectedTicketType('ESTUDANTE')}
-            className="glass-panel cursor-pointer animate-fade-up delay-100"
-            style={{ 
-              cursor: 'pointer',
-              border: selectedTicketType === 'ESTUDANTE' ? '2px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.12)',
-              background: selectedTicketType === 'ESTUDANTE' ? 'linear-gradient(to bottom right, rgba(223, 186, 82, 0.14), rgba(4, 8, 18, 0.95))' : 'var(--glass-bg)',
-              boxShadow: selectedTicketType === 'ESTUDANTE' ? '0 0 35px rgba(223, 186, 82, 0.25)' : 'none',
-              padding: '1.75rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              transition: 'all 0.3s ease',
-              outline: 'none',
-              userSelect: 'none',
-              WebkitTapHighlightColor: 'transparent',
-              position: 'relative'
-            }}
-          >
-            <div>
-              <div className="flex items-center justify-between" style={{ marginBottom: '0.8rem' }}>
-                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1.2px', color: '#60a5fa', fontWeight: 700 }}>
-                  Acadêmico
-                </span>
-                <span style={{ 
-                  background: 'rgba(96, 165, 250, 0.15)', 
-                  border: '1px solid rgba(96, 165, 250, 0.4)',
-                  color: '#93c5fd',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: '20px'
-                }}>
-                  50 Vagas
-                </span>
-              </div>
-
-              <h3 style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '0.3rem' }}>Estudante de Direito</h3>
-              <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '1rem', lineHeight: 1 }}>
-                R$ 150,00
-              </div>
-
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '1.2rem' }}>
-                Destinado a graduandos em Direito com comprovação acadêmica:
-              </p>
-
-              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <li className="flex items-center gap-3">
-                  <div className="icon-badge" style={{ width: '32px', height: '32px' }}>
-                    <BookOpen color="var(--primary)" size={16} />
-                  </div>
-                  <span style={{ fontSize: '0.88rem' }}>Apostila Oficial do Evento</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="icon-badge" style={{ width: '32px', height: '32px' }}>
-                    <CheckCircle2 color="var(--primary)" size={16} />
-                  </div>
-                  <span style={{ fontSize: '0.88rem' }}>Certificado Acadêmico</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="icon-badge" style={{ width: '32px', height: '32px' }}>
-                    <Shield color="var(--primary)" size={16} />
-                  </div>
-                  <span style={{ fontSize: '0.88rem' }}>Crachá de Estudante</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="icon-badge" style={{ width: '32px', height: '32px' }}>
-                    <GraduationCap color="var(--primary)" size={16} />
-                  </div>
-                  <span style={{ fontSize: '0.88rem' }}>Diploma c/ Horas Complementares</span>
-                </li>
-              </ul>
-            </div>
-
-            <button 
-              type="button" 
-              onClick={(e) => { e.stopPropagation(); setSelectedTicketType('ESTUDANTE'); }}
-              className={selectedTicketType === 'ESTUDANTE' ? 'btn-primary' : 'btn-secondary'}
-              style={{ width: '100%', marginTop: '1.5rem', padding: '0.85rem', fontSize: '0.9rem' }}
-            >
-              {selectedTicketType === 'ESTUDANTE' ? '✓ Selecionado' : 'Escolher Estudante (R$ 150)'}
-            </button>
+        {/* ======================================================== */}
+        {/* SEÇÃO DO LOCAL DO EVENTO: VERSÁ RESTAURANTE & EVENTOS */}
+        {/* ======================================================== */}
+        <section className="glass-panel animate-fade-up delay-200" style={{ 
+          maxWidth: '850px', 
+          margin: '0 auto 3rem', 
+          padding: '2.5rem', 
+          border: '1px solid rgba(223, 186, 82, 0.4)',
+          boxShadow: '0 12px 40px rgba(0,0,0,0.5)'
+        }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
+            <span style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--primary)', fontWeight: 800 }}>
+              Estrutura de Alto Padrão
+            </span>
+            <h3 style={{ fontSize: '2.1rem', color: '#fff', margin: '0.3rem 0 0.6rem' }}>
+              Versá Restaurante & Eventos
+            </h3>
+            <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: '1rem', maxWidth: '680px', margin: '0 auto' }}>
+              Um dos complexos corporativos e gastronômicos mais modernos do Distrito Federal, com mais de 6.400 m² distribuídos em 4 pavimentos no Núcleo Bandeirante.
+            </p>
           </div>
 
-          {/* 2. Ingresso Padrão - R$ 280,00 (400 vagas) */}
-          <div 
-            onClick={() => setSelectedTicketType('PADRAO')}
-            className="glass-panel cursor-pointer animate-fade-up delay-200"
-            style={{ 
-              cursor: 'pointer',
-              border: selectedTicketType === 'PADRAO' ? '2px solid var(--primary)' : '1px solid rgba(255, 255, 255, 0.12)',
-              background: selectedTicketType === 'PADRAO' ? 'linear-gradient(to bottom right, rgba(223, 186, 82, 0.14), rgba(4, 8, 18, 0.95))' : 'var(--glass-bg)',
-              boxShadow: selectedTicketType === 'PADRAO' ? '0 0 35px rgba(223, 186, 82, 0.25)' : 'none',
-              padding: '1.75rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
-              transition: 'all 0.3s ease',
-              outline: 'none',
-              userSelect: 'none',
-              WebkitTapHighlightColor: 'transparent',
-              position: 'relative'
-            }}
-          >
-            <div>
-              <div className="flex items-center justify-between" style={{ marginBottom: '0.8rem' }}>
-                <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1.2px', color: 'var(--primary)', fontWeight: 700 }}>
-                  Profissional
-                </span>
-                <span style={{ 
-                  background: 'rgba(223, 186, 82, 0.15)', 
-                  border: '1px solid var(--primary)',
-                  color: '#ffeca8',
-                  fontSize: '0.72rem',
-                  fontWeight: 700,
-                  padding: '0.2rem 0.6rem',
-                  borderRadius: '20px'
-                }}>
-                  400 Vagas
-                </span>
-              </div>
-
-              <h3 style={{ fontSize: '1.5rem', color: '#fff', marginBottom: '0.3rem' }}>Ingresso Padrão</h3>
-              <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '1rem', lineHeight: 1 }}>
-                R$ 280,00
-              </div>
-
-              <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.7)', marginBottom: '1.2rem' }}>
-                Acesso integral para advogados, árbitros e profissionais:
-              </p>
-
-              <ul style={{ listStyle: 'none', padding: 0, display: 'flex', flexDirection: 'column', gap: '0.75rem' }}>
-                <li className="flex items-center gap-3">
-                  <div className="icon-badge" style={{ width: '32px', height: '32px' }}>
-                    <BookOpen color="var(--primary)" size={16} />
-                  </div>
-                  <span style={{ fontSize: '0.88rem' }}>Apostila Oficial do Evento</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="icon-badge" style={{ width: '32px', height: '32px' }}>
-                    <CheckCircle2 color="var(--primary)" size={16} />
-                  </div>
-                  <span style={{ fontSize: '0.88rem' }}>Certificado de Participação</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="icon-badge" style={{ width: '32px', height: '32px' }}>
-                    <Shield color="var(--primary)" size={16} />
-                  </div>
-                  <span style={{ fontSize: '0.88rem' }}>Crachá de Acesso Exclusivo</span>
-                </li>
-                <li className="flex items-center gap-3">
-                  <div className="icon-badge" style={{ width: '32px', height: '32px' }}>
-                    <Award color="var(--primary)" size={16} />
-                  </div>
-                  <span style={{ fontSize: '0.88rem' }}>Diploma com Carga Horária</span>
-                </li>
-              </ul>
+          {/* Showcase de Fotos do Versá */}
+          <div style={{
+            background: 'rgba(0,0,0,0.55)',
+            border: '1px solid rgba(223, 186, 82, 0.3)',
+            borderRadius: '16px',
+            padding: '1.2rem',
+            marginBottom: '1.8rem',
+            position: 'relative'
+          }}>
+            <div className="flex items-center justify-between" style={{ marginBottom: '0.8rem' }}>
+              <strong style={{ fontSize: '1.05rem', color: '#ffeca8' }}>
+                {venueImages[activeVenueIndex].title}
+              </strong>
+              <span style={{ fontSize: '0.8rem', color: 'rgba(255,255,255,0.6)' }}>
+                {activeVenueIndex + 1} de {venueImages.length}
+              </span>
             </div>
 
-            <button 
-              type="button" 
-              onClick={(e) => { e.stopPropagation(); setSelectedTicketType('PADRAO'); }}
-              className={selectedTicketType === 'PADRAO' ? 'btn-primary' : 'btn-secondary'}
-              style={{ width: '100%', marginTop: '1.5rem', padding: '0.85rem', fontSize: '0.9rem' }}
-            >
-              {selectedTicketType === 'PADRAO' ? '✓ Selecionado' : 'Escolher Padrão (R$ 280)'}
-            </button>
-          </div>
-        </div>
-
-        {/* 3. Ingresso KIT em Baixo (Largura Total) */}
-        <div style={{ marginBottom: '2.5rem' }}>
-          <div 
-            onClick={() => setSelectedTicketType('VIP')}
-            className="glass-panel cursor-pointer animate-fade-up delay-300"
-            style={{ 
-              cursor: 'pointer',
-              border: selectedTicketType === 'VIP' ? '2px solid var(--primary)' : '1px solid rgba(223, 186, 82, 0.3)',
-              background: selectedTicketType === 'VIP' ? 'linear-gradient(to bottom right, rgba(223, 186, 82, 0.2), rgba(4, 8, 18, 0.95))' : 'var(--glass-bg)',
-              boxShadow: selectedTicketType === 'VIP' ? '0 0 45px rgba(223, 186, 82, 0.35)' : 'none',
-              padding: '2.2rem',
-              display: 'flex',
-              flexDirection: 'column',
-              justifyContent: 'space-between',
+            <div style={{
               position: 'relative',
-              transition: 'all 0.3s ease',
-              outline: 'none',
-              userSelect: 'none',
-              WebkitTapHighlightColor: 'transparent'
+              width: '100%',
+              height: '340px',
+              borderRadius: '14px',
+              overflow: 'hidden',
+              background: '#040812',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center'
+            }}>
+              <img 
+                src={venueImages[activeVenueIndex].src} 
+                alt={venueImages[activeVenueIndex].title}
+                style={{
+                  width: '100%',
+                  height: '100%',
+                  objectFit: 'cover',
+                  transition: 'opacity 0.4s ease'
+                }}
+              />
+
+              <button
+                type="button"
+                onClick={() => setActiveVenueIndex(prev => (prev === 0 ? venueImages.length - 1 : prev - 1))}
+                style={{
+                  position: 'absolute',
+                  left: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'rgba(0,0,0,0.7)',
+                  border: '1px solid var(--primary)',
+                  borderRadius: '50%',
+                  width: '38px',
+                  height: '38px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--primary)',
+                  cursor: 'pointer',
+                  zIndex: 2
+                }}
+                aria-label="Foto anterior"
+              >
+                <ChevronLeft size={22} />
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setActiveVenueIndex(prev => (prev === venueImages.length - 1 ? 0 : prev + 1))}
+                style={{
+                  position: 'absolute',
+                  right: '12px',
+                  top: '50%',
+                  transform: 'translateY(-50%)',
+                  background: 'rgba(0,0,0,0.7)',
+                  border: '1px solid var(--primary)',
+                  borderRadius: '50%',
+                  width: '38px',
+                  height: '38px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: 'var(--primary)',
+                  cursor: 'pointer',
+                  zIndex: 2
+                }}
+                aria-label="Próxima foto"
+              >
+                <ChevronRight size={22} />
+              </button>
+
+              <div style={{
+                position: 'absolute',
+                bottom: 0,
+                left: 0,
+                right: 0,
+                background: 'linear-gradient(to top, rgba(0,0,0,0.85) 0%, transparent 100%)',
+                padding: '1.2rem 1.2rem 0.8rem',
+                color: '#fff',
+                fontSize: '0.9rem'
+              }}>
+                {venueImages[activeVenueIndex].desc}
+              </div>
+            </div>
+
+            {/* Miniaturas das Fotos */}
+            <div className="flex gap-2 justify-center flex-wrap" style={{ marginTop: '0.9rem' }}>
+              {venueImages.map((img, idx) => (
+                <button
+                  key={img.src}
+                  type="button"
+                  onClick={() => setActiveVenueIndex(idx)}
+                  style={{
+                    width: '65px',
+                    height: '50px',
+                    borderRadius: '8px',
+                    overflow: 'hidden',
+                    border: activeVenueIndex === idx ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.2)',
+                    opacity: activeVenueIndex === idx ? 1 : 0.6,
+                    padding: 0,
+                    cursor: 'pointer',
+                    transition: 'all 0.2s ease'
+                  }}
+                >
+                  <img src={img.src} alt={img.title} style={{ width: '100%', height: '100%', objectFit: 'cover' }} />
+                </button>
+              ))}
+            </div>
+          </div>
+
+          {/* Dados de Endereço e Comodidades */}
+          <div className="grid grid-cols-2 gap-4 mobile-col" style={{ marginBottom: '1.6rem' }}>
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '1.2rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex items-center gap-3" style={{ color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 700, fontSize: '0.9rem' }}>
+                <MapPin size={18} style={{ flexShrink: 0 }} />
+                <span>Endereço Completo</span>
+              </div>
+              <strong style={{ color: '#fff', fontSize: '1.05rem', display: 'block' }}>
+                SIBS Quadra 2, Conjunto B, Lotes 3/5
+              </strong>
+              <p style={{ margin: '0.3rem 0 0', color: 'rgba(255,255,255,0.7)', fontSize: '0.88rem' }}>
+                Setor de Indústria Bernardo Sayão — Núcleo Bandeirante, Brasília / DF • CEP: 71736-202
+              </p>
+            </div>
+
+            <div style={{ background: 'rgba(255,255,255,0.04)', borderRadius: '12px', padding: '1.2rem', border: '1px solid rgba(255,255,255,0.08)' }}>
+              <div className="flex items-center gap-3" style={{ color: 'var(--primary)', marginBottom: '0.5rem', fontWeight: 700, fontSize: '0.9rem' }}>
+                <Sparkles size={18} style={{ flexShrink: 0 }} />
+                <span>Estrutura & Comodidades</span>
+              </div>
+              <ul style={{ margin: 0, paddingLeft: '1.2rem', color: 'rgba(255,255,255,0.85)', fontSize: '0.85rem', lineHeight: 1.6 }}>
+                <li>Salão de convenções no 2º pavimento com acústica profissional</li>
+                <li>Estacionamento privativo para participantes</li>
+                <li>Acessibilidade integral e elevadores nos 4 pavimentos</li>
+                <li>Fácil acesso pela EPNB e via Bernardo Sayão</li>
+              </ul>
+            </div>
+          </div>
+
+          {/* Botões de Rota no Google Maps e Waze */}
+          <div className="flex gap-4 mobile-col justify-center">
+            <a 
+              href="https://www.google.com/maps/search/?api=1&query=Vers%C3%A1+Restaurante+e+Eventos+SIBS+Quadra+2+Nucleo+Bandeirante+Brasilia" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn-primary"
+              style={{ flex: 1, padding: '0.95rem 1.4rem', fontSize: '0.95rem', gap: '0.75rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <Navigation size={18} style={{ flexShrink: 0 }} />
+              <span>Ver no Google Maps</span>
+            </a>
+            <a 
+              href="https://waze.com/ul?q=Vers%C3%A1+Restaurante+e+Eventos+Nucleo+Bandeirante" 
+              target="_blank" 
+              rel="noopener noreferrer"
+              className="btn-secondary"
+              style={{ flex: 1, padding: '0.95rem 1.4rem', fontSize: '0.95rem', gap: '0.75rem', display: 'inline-flex', alignItems: 'center', justifyContent: 'center' }}
+            >
+              <ExternalLink size={18} style={{ flexShrink: 0 }} />
+              <span>Abrir no Waze</span>
+            </a>
+          </div>
+        </section>
+
+        {/* ======================================================== */}
+        {/* CARD PRINCIPAL: INGRESSO ÚNICO OFICIAL (R$ 490,00) */}
+        {/* ======================================================== */}
+        <div id="ingresso-unico" style={{ maxWidth: '850px', margin: '0 auto 2.5rem' }}>
+          <div 
+            className="glass-panel animate-fade-up"
+            style={{ 
+              border: '2px solid var(--primary)',
+              background: 'linear-gradient(to bottom right, rgba(223, 186, 82, 0.16), rgba(4, 8, 18, 0.96))',
+              boxShadow: '0 0 50px rgba(223, 186, 82, 0.28)',
+              padding: '2.5rem',
+              borderRadius: '20px',
+              position: 'relative'
             }}
           >
-            <div>
-              <div className="flex items-center justify-between" style={{ marginBottom: '1rem' }}>
-                <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: '#ffeca8', fontWeight: 800 }}>
-                  ★ Experiência VIP + Kit
-                </span>
+            <div className="flex items-center justify-between mobile-col gap-3" style={{ marginBottom: '1.2rem' }}>
+              <div className="flex items-center gap-2">
                 <span style={{ 
                   background: 'linear-gradient(135deg, var(--primary), var(--primary-hover))', 
                   color: '#040812',
-                  fontSize: '0.75rem',
-                  fontWeight: 800,
-                  padding: '0.2rem 0.7rem',
+                  fontSize: '0.78rem',
+                  fontWeight: 900,
+                  letterSpacing: '1.5px',
+                  textTransform: 'uppercase',
+                  padding: '0.3rem 0.9rem',
                   borderRadius: '20px'
                 }}>
-                  {selectedTicketType === 'VIP' ? 'SELECIONADO (100 VAGAS)' : '100 VAGAS DISPONÍVEIS'}
+                  ★ INGRESSO ÚNICO OFICIAL
+                </span>
+                <span style={{ 
+                  background: 'rgba(74, 222, 128, 0.15)', 
+                  border: '1px solid #4ade80',
+                  color: '#4ade80',
+                  fontSize: '0.78rem',
+                  fontWeight: 700,
+                  padding: '0.3rem 0.8rem',
+                  borderRadius: '20px'
+                }}>
+                  Lote Exclusivo
                 </span>
               </div>
+              <span style={{ fontSize: '0.9rem', color: '#ffeca8', fontWeight: 600 }}>
+                Terça, 01.12.2026 • 09h às 18h
+              </span>
+            </div>
 
-              <div className="grid grid-cols-2 gap-8 mobile-col">
-                <div>
-                  <h3 style={{ fontSize: '1.8rem', color: '#fff', marginBottom: '0.4rem' }}>Kit Aniversário 30 Anos</h3>
-                  <p style={{ margin: '0 0 0.8rem', color: '#ffeca8', fontSize: '1.05rem', fontWeight: 600 }}>Arbitragem e Mediação no Brasil</p>
-                  <div style={{ fontSize: '2.5rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '1.2rem', lineHeight: 1 }}>
-                    R$ 427,00
+            <div className="flex items-baseline justify-between mobile-col gap-4" style={{ marginBottom: '1.5rem', borderBottom: '1px solid rgba(223, 186, 82, 0.25)', paddingBottom: '1.5rem' }}>
+              <div>
+                <h3 style={{ fontSize: '2.2rem', color: '#fff', margin: 0, lineHeight: 1.2 }}>
+                  Seminário Nacional 30 Anos
+                </h3>
+                <p style={{ margin: '0.4rem 0 0', color: 'rgba(255,255,255,0.75)', fontSize: '1rem' }}>
+                  Acesso integral a todas as conferências solenes, mesa diretora e debates.
+                </p>
+              </div>
+              <div style={{ textAlign: 'right' }}>
+                <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>
+                  R$ 490,00
+                </div>
+                <span style={{ fontSize: '0.95rem', color: '#ffeca8', fontWeight: 700, display: 'block', marginTop: '0.3rem' }}>
+                  ou em até 10x de R$ 49,00 sem juros
+                </span>
+              </div>
+            </div>
+
+            {/* O QUE ESTÁ INCLUSO NO INGRESSO ÚNICO */}
+            <div style={{ marginBottom: '1.8rem' }}>
+              <span style={{ fontSize: '0.85rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 800, display: 'block', marginBottom: '1rem' }}>
+                Itens Inclusos no seu Ingresso:
+              </span>
+
+              <div className="grid grid-cols-2 gap-4 mobile-col">
+                <div className="flex items-start gap-3">
+                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
+                    <Award color="var(--primary)" size={18} />
                   </div>
-
-                  {/* Destaque VIP: Acesso antecipado às 8h com Café da Manhã Exclusivo */}
-                  <div style={{
-                    background: 'linear-gradient(135deg, rgba(223, 186, 82, 0.18), rgba(223, 186, 82, 0.05))',
-                    border: '1px solid var(--primary)',
-                    borderRadius: '12px',
-                    padding: '0.95rem 1.1rem',
-                    marginBottom: '1.2rem',
-                    display: 'flex',
-                    alignItems: 'center',
-                    gap: '0.85rem'
-                  }}>
-                    <div className="icon-badge" style={{ width: '42px', height: '42px', background: 'rgba(223, 186, 82, 0.25)' }}>
-                      <Coffee color="var(--primary)" size={22} />
-                    </div>
-                    <div>
-                      <strong style={{ color: '#ffeca8', fontSize: '1rem', display: 'block' }}>
-                        Acesso Exclusivo às 08h00
-                      </strong>
-                      <span style={{ color: 'rgba(255,255,255,0.85)', fontSize: '0.88rem' }}>
-                        Café da manhã exclusivo de boas-vindas com a Mesa e Palestrantes.
-                      </span>
-                    </div>
+                  <div>
+                    <strong style={{ color: '#fff', fontSize: '0.98rem', display: 'block' }}>Entrega de Certificados Oficiais</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Certificado institucional com carga horária completa</span>
                   </div>
+                </div>
 
-                  <p style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.7)', marginBottom: '1rem' }}>
-                    Todos os itens do Ingresso Padrão + <strong>Kit Especial Comemorativo</strong>:
-                  </p>
+                <div className="flex items-start gap-3">
+                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
+                    <Shield color="var(--primary)" size={18} />
+                  </div>
+                  <div>
+                    <strong style={{ color: '#fff', fontSize: '0.98rem', display: 'block' }}>Credencial Oficial do Evento</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Identificação solene de participante</span>
+                  </div>
+                </div>
 
-                  <div style={{ background: 'rgba(0,0,0,0.35)', padding: '1rem 1.2rem', borderRadius: '12px', border: '1px solid rgba(223, 186, 82, 0.25)', marginBottom: '1.2rem' }}>
-                    <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 700, display: 'block', marginBottom: '0.6rem' }}>
-                      Itens Inclusos no Kit Oficial:
+                <div className="flex items-start gap-3">
+                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
+                    <BookOpen color="var(--primary)" size={18} />
+                  </div>
+                  <div>
+                    <strong style={{ color: '#fff', fontSize: '0.98rem', display: 'block' }}>Apostila Oficial do Evento</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Material didático de apoio encadernado</span>
+                  </div>
+                </div>
+
+                <div className="flex items-start gap-3">
+                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0 }}>
+                    <GraduationCap color="var(--primary)" size={18} />
+                  </div>
+                  <div>
+                    <strong style={{ color: '#fff', fontSize: '0.98rem', display: 'block' }}>E-book Digital Exclusivo</strong>
+                    <span style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>Obra doutrinária comemorativa dos 30 anos</span>
+                  </div>
+                </div>
+
+                {/* Destaque Café Quente e Água Mineral */}
+                <div className="flex items-start gap-3" style={{ gridColumn: 'span 2' }}>
+                  <div className="icon-badge" style={{ width: '36px', height: '36px', flexShrink: 0, background: 'rgba(223, 186, 82, 0.25)' }}>
+                    <Coffee color="var(--primary)" size={18} />
+                  </div>
+                  <div>
+                    <strong style={{ color: '#ffeca8', fontSize: '1rem', display: 'block' }}>
+                      Água Mineral e Café Quente à Vontade o Dia Todo
+                    </strong>
+                    <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.88rem' }}>
+                      Estações permanentes de café de alta qualidade e água disponíveis durante todo o evento (09h às 18h).
                     </span>
-                    <ul style={{ listStyle: 'none', padding: 0, margin: 0, display: 'grid', gridTemplateColumns: 'repeat(2, 1fr)', gap: '0.5rem' }}>
-                      <li style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ color: 'var(--primary)' }}>•</span> Caderno Moleskine
-                      </li>
-                      <li style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ color: 'var(--primary)' }}>•</span> Caneca Institucional
-                      </li>
-                      <li style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ color: 'var(--primary)' }}>•</span> Botton Metálico
-                      </li>
-                      <li style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ color: 'var(--primary)' }}>•</span> Suporte Celular
-                      </li>
-                      <li style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ color: 'var(--primary)' }}>•</span> Chaveiro Oficial
-                      </li>
-                      <li style={{ fontSize: '0.88rem', color: 'rgba(255,255,255,0.9)', display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
-                        <span style={{ color: 'var(--primary)' }}>•</span> Cordão VIP
-                      </li>
-                    </ul>
                   </div>
-
-                  <div className="flex items-center gap-3">
-                    <CheckCircle2 color="var(--primary)" size={20} />
-                    <span style={{ fontSize: '0.92rem', color: 'rgba(255,255,255,0.85)' }}>
-                      Apostila + Certificado + Crachá Exclusivo + Diploma
-                    </span>
-                  </div>
-                </div>
-
-                {/* Coluna Direita: Carrossel de Fotos */}
-                <div style={{ display: 'flex', flexDirection: 'column', justifyContent: 'center' }}>
-
-              {/* Carrossel e Galeria do Kit VIP */}
-              <div 
-                style={{ 
-                  background: 'rgba(0,0,0,0.5)', 
-                  border: '1px solid rgba(223, 186, 82, 0.3)', 
-                  borderRadius: '14px', 
-                  padding: '1rem', 
-                  marginBottom: '1.2rem',
-                  position: 'relative'
-                }}
-                onClick={(e) => e.stopPropagation()}
-              >
-                <div className="flex items-center justify-between" style={{ marginBottom: '0.6rem' }}>
-                  <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 700 }}>
-                    Galeria de Fotos do Kit VIP
-                  </span>
-                  <span style={{ fontSize: '0.75rem', color: 'rgba(255,255,255,0.6)' }}>
-                    {activeKitIndex + 1} de {kitImages.length}
-                  </span>
-                </div>
-
-                {/* Display Principal da Imagem Ativa */}
-                <div 
-                  style={{ 
-                    position: 'relative', 
-                    width: '100%', 
-                    height: '220px', 
-                    borderRadius: '16px', 
-                    overflow: 'hidden',
-                    background: 'radial-gradient(circle, rgba(223, 186, 82, 0.12) 0%, rgba(4, 8, 18, 0.95) 75%)',
-                    display: 'flex',
-                    alignItems: 'center',
-                    justifyContent: 'center',
-                    border: '1px solid rgba(223, 186, 82, 0.25)',
-                    boxShadow: '0 8px 24px rgba(0,0,0,0.5)'
-                  }}
-                >
-                  <img 
-                    src={kitImages[activeKitIndex].src} 
-                    alt={kitImages[activeKitIndex].title}
-                    style={{ 
-                      maxHeight: '190px', 
-                      maxWidth: '90%', 
-                      objectFit: 'contain',
-                      borderRadius: '12px',
-                      filter: 'drop-shadow(0 8px 18px rgba(0,0,0,0.65))',
-                      transition: 'all 0.3s ease'
-                    }}
-                  />
-
-                  {/* Seta Esquerda */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveKitIndex(prev => (prev === 0 ? kitImages.length - 1 : prev - 1));
-                    }}
-                    style={{
-                      position: 'absolute',
-                      left: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'rgba(0,0,0,0.65)',
-                      border: '1px solid rgba(223, 186, 82, 0.4)',
-                      borderRadius: '50%',
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--primary)',
-                      cursor: 'pointer',
-                      zIndex: 2
-                    }}
-                    aria-label="Imagem anterior"
-                  >
-                    <ChevronLeft size={18} />
-                  </button>
-
-                  {/* Seta Direita */}
-                  <button
-                    type="button"
-                    onClick={(e) => {
-                      e.stopPropagation();
-                      setActiveKitIndex(prev => (prev === kitImages.length - 1 ? 0 : prev + 1));
-                    }}
-                    style={{
-                      position: 'absolute',
-                      right: '8px',
-                      top: '50%',
-                      transform: 'translateY(-50%)',
-                      background: 'rgba(0,0,0,0.65)',
-                      border: '1px solid rgba(223, 186, 82, 0.4)',
-                      borderRadius: '50%',
-                      width: '32px',
-                      height: '32px',
-                      display: 'flex',
-                      alignItems: 'center',
-                      justifyContent: 'center',
-                      color: 'var(--primary)',
-                      cursor: 'pointer',
-                      zIndex: 2
-                    }}
-                    aria-label="Próxima imagem"
-                  >
-                    <ChevronRight size={18} />
-                  </button>
-                </div>
-
-                {/* Fileira de Miniaturas Táteis Clicáveis Centralizada */}
-                <div 
-                  className="flex gap-2 justify-center flex-wrap" 
-                  style={{ 
-                    marginTop: '0.85rem', 
-                    paddingBottom: '2px',
-                    justifyContent: 'center'
-                  }}
-                >
-                  {kitImages.map((img, idx) => (
-                    <button
-                      key={img.src}
-                      type="button"
-                      onClick={(e) => {
-                        e.stopPropagation();
-                        setActiveKitIndex(idx);
-                      }}
-                      style={{
-                        flexShrink: 0,
-                        width: '46px',
-                        height: '46px',
-                        borderRadius: '10px',
-                        border: activeKitIndex === idx ? '2px solid var(--primary)' : '1px solid rgba(255,255,255,0.15)',
-                        background: activeKitIndex === idx ? 'rgba(223, 186, 82, 0.22)' : 'rgba(0,0,0,0.35)',
-                        padding: '3px',
-                        cursor: 'pointer',
-                        transition: 'all 0.2s ease',
-                        display: 'flex',
-                        alignItems: 'center',
-                        justifyContent: 'center',
-                        boxShadow: activeKitIndex === idx ? '0 0 10px rgba(223, 186, 82, 0.35)' : 'none',
-                        outline: 'none',
-                        WebkitTapHighlightColor: 'transparent',
-                        userSelect: 'none'
-                      }}
-                      title={img.title}
-                    >
-                      <img 
-                        src={img.src} 
-                        alt={img.title} 
-                        style={{ maxWidth: '100%', maxHeight: '100%', objectFit: 'contain', borderRadius: '6px', pointerEvents: 'none' }}
-                      />
-                    </button>
-                  ))}
-                </div>
                 </div>
               </div>
             </div>
 
-            <button 
-              type="button" 
-              onClick={(e) => { e.stopPropagation(); setSelectedTicketType('VIP'); }}
-              className={selectedTicketType === 'VIP' ? 'btn-primary' : 'btn-secondary'}
-              style={{ width: '100%', marginTop: '1.5rem', padding: '0.85rem' }}
+            <Link 
+              href="#comprar" 
+              className="btn-primary btn-full"
+              style={{ padding: '1.2rem', fontSize: '1.15rem', textAlign: 'center', justifyContent: 'center' }}
             >
-              {selectedTicketType === 'VIP' ? '✓ Selecionado (100 Vagas)' : 'Escolher Kit 30 Anos (R$ 427)'}
-            </button>
+              Garantir Minha Vaga — R$ 490,00 (Até 10x sem Juros)
+            </Link>
           </div>
         </div>
-      </div>
 
-        {/* Formulário de Inscrição */}
+        {/* ======================================================== */}
+        {/* SEÇÃO DE OPCIONAIS A PARTE: KIT 30 ANOS & ALMOÇO BUFFET */}
+        {/* ======================================================== */}
+        <div style={{ maxWidth: '850px', margin: '0 auto 3rem' }}>
+          <div style={{ textAlign: 'center', marginBottom: '1.8rem' }}>
+            <span style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '2px', color: 'var(--primary)', fontWeight: 800 }}>
+              Personalize sua Experiência
+            </span>
+            <h3 style={{ fontSize: '2rem', color: '#fff', margin: '0.3rem 0 0.5rem' }}>
+              Opcionais Disponíveis à Parte
+            </h3>
+            <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
+              Você pode adicionar o Kit Oficial e o Almoço Buffet Completo durante a sua inscrição.
+            </p>
+          </div>
+
+          <div className="grid grid-cols-2 gap-6 mobile-col">
+            
+            {/* OPCIONAL 1: KIT OFICIAL COMEMORATIVO (R$ 109,90) */}
+            <div 
+              className="glass-panel" 
+              style={{ 
+                padding: '1.8rem', 
+                border: includeKit ? '2px solid var(--primary)' : '1px solid rgba(223, 186, 82, 0.3)',
+                background: includeKit ? 'linear-gradient(to bottom right, rgba(223, 186, 82, 0.18), rgba(4, 8, 18, 0.95))' : 'var(--glass-bg)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between" style={{ marginBottom: '0.8rem' }}>
+                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1.2px', color: '#ffeca8', fontWeight: 800 }}>
+                    Opcional à Parte
+                  </span>
+                  <span style={{ 
+                    background: 'rgba(223, 186, 82, 0.2)', 
+                    border: '1px solid var(--primary)', 
+                    color: '#ffeca8', 
+                    fontSize: '0.72rem', 
+                    fontWeight: 800, 
+                    padding: '0.2rem 0.6rem', 
+                    borderRadius: '20px' 
+                  }}>
+                    Colecionador
+                  </span>
+                </div>
+
+                <h4 style={{ fontSize: '1.45rem', color: '#fff', marginBottom: '0.3rem' }}>
+                  Kit Oficial 30 Anos
+                </h4>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.8rem', lineHeight: 1 }}>
+                  R$ 109,90
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', marginBottom: '1.2rem' }}>
+                  Conjunto comemorativo oficial de alto padrão com peças personalizadas:
+                </p>
+
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.88rem' }}>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Caderno Moleskine com caneta luxo</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Caneca de porcelana comemorativa 30 anos</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Botton metálico oficial esmaltado</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Chaveiro comemorativo em metal dourado</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Suporte anatômico de celular</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Cordão VIP e crachá comemorativo</span>
+                  </li>
+                </ul>
+
+                {/* Mini Carrossel do Kit */}
+                <div style={{
+                  background: 'rgba(0,0,0,0.4)',
+                  borderRadius: '12px',
+                  padding: '0.8rem',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  marginBottom: '1rem',
+                  textAlign: 'center'
+                }}>
+                  <div style={{ height: '140px', display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                    <img 
+                      src={kitImages[activeKitIndex].src} 
+                      alt={kitImages[activeKitIndex].title}
+                      style={{ maxHeight: '130px', maxWidth: '85%', objectFit: 'contain' }}
+                    />
+                  </div>
+                  <span style={{ fontSize: '0.78rem', color: '#ffeca8', fontWeight: 600, display: 'block', marginTop: '0.4rem' }}>
+                    {kitImages[activeKitIndex].title}
+                  </span>
+                </div>
+              </div>
+
+              <label 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '0.6rem', 
+                  padding: '0.85rem', 
+                  borderRadius: '10px', 
+                  background: includeKit ? 'var(--primary)' : 'rgba(255,255,255,0.08)',
+                  color: includeKit ? '#000' : '#fff',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={includeKit} 
+                  onChange={(e) => setIncludeKit(e.target.checked)} 
+                  style={{ width: '18px', height: '18px', accentColor: '#000', cursor: 'pointer' }}
+                />
+                {includeKit ? '✓ Kit 30 Anos Adicionado' : '+ Adicionar Kit (+ R$ 109,90)'}
+              </label>
+            </div>
+
+            {/* OPCIONAL 2: ALMOÇO BUFFET COMPLETO (R$ 139,90) */}
+            <div 
+              className="glass-panel" 
+              style={{ 
+                padding: '1.8rem', 
+                border: includeBuffet ? '2px solid var(--primary)' : '1px solid rgba(223, 186, 82, 0.3)',
+                background: includeBuffet ? 'linear-gradient(to bottom right, rgba(223, 186, 82, 0.18), rgba(4, 8, 18, 0.95))' : 'var(--glass-bg)',
+                display: 'flex',
+                flexDirection: 'column',
+                justifyContent: 'space-between',
+                transition: 'all 0.3s ease'
+              }}
+            >
+              <div>
+                <div className="flex items-center justify-between" style={{ marginBottom: '0.8rem' }}>
+                  <span style={{ fontSize: '0.75rem', textTransform: 'uppercase', letterSpacing: '1.2px', color: '#ffeca8', fontWeight: 800 }}>
+                    Opcional à Parte
+                  </span>
+                  <span style={{ 
+                    background: 'rgba(223, 186, 82, 0.2)', 
+                    border: '1px solid var(--primary)', 
+                    color: '#ffeca8', 
+                    fontSize: '0.72rem', 
+                    fontWeight: 800, 
+                    padding: '0.2rem 0.6rem', 
+                    borderRadius: '20px' 
+                  }}>
+                    Gastronomia Versá
+                  </span>
+                </div>
+
+                <h4 style={{ fontSize: '1.45rem', color: '#fff', marginBottom: '0.3rem' }}>
+                  Almoço Buffet Completo
+                </h4>
+                <div style={{ fontSize: '2.1rem', fontWeight: 800, color: 'var(--primary)', marginBottom: '0.8rem', lineHeight: 1 }}>
+                  R$ 139,90
+                </div>
+
+                <p style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.75)', marginBottom: '1.2rem' }}>
+                  Experiência gastronômica premiada servida no restaurante do Versá:
+                </p>
+
+                <ul style={{ listStyle: 'none', padding: 0, margin: '0 0 1.2rem', display: 'flex', flexDirection: 'column', gap: '0.65rem', fontSize: '0.88rem' }}>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Parrilla assistida com cortes nobres ao vivo</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Ilha completa de antepastos e frios selecionados</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Saladas finas e guarnições especiais</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Massas e pratos quentes assinados pelo chef</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Sobremesas da casa e bebidas no almoço</span>
+                  </li>
+                  <li className="flex items-center gap-3">
+                    <Check size={16} color="var(--primary)" style={{ flexShrink: 0 }} />
+                    <span>Comodidade de almoçar no local sem deslocamentos</span>
+                  </li>
+                </ul>
+
+                {/* Mini Foto do Buffet */}
+                <div style={{
+                  background: 'rgba(0,0,0,0.4)',
+                  borderRadius: '12px',
+                  overflow: 'hidden',
+                  border: '1px solid rgba(255,255,255,0.1)',
+                  marginBottom: '1rem',
+                  height: '140px'
+                }}>
+                  <img 
+                    src="/versa-buffet.jpg" 
+                    alt="Buffet Completo do Versá"
+                    style={{ width: '100%', height: '100%', objectFit: 'cover' }}
+                  />
+                </div>
+              </div>
+
+              <label 
+                style={{ 
+                  display: 'flex', 
+                  alignItems: 'center', 
+                  justifyContent: 'center', 
+                  gap: '0.6rem', 
+                  padding: '0.85rem', 
+                  borderRadius: '10px', 
+                  background: includeBuffet ? 'var(--primary)' : 'rgba(255,255,255,0.08)',
+                  color: includeBuffet ? '#000' : '#fff',
+                  fontWeight: 700,
+                  fontSize: '0.92rem',
+                  cursor: 'pointer',
+                  userSelect: 'none',
+                  transition: 'all 0.2s ease'
+                }}
+              >
+                <input 
+                  type="checkbox" 
+                  checked={includeBuffet} 
+                  onChange={(e) => setIncludeBuffet(e.target.checked)} 
+                  style={{ width: '18px', height: '18px', accentColor: '#000', cursor: 'pointer' }}
+                />
+                {includeBuffet ? '✓ Almoço Buffet Adicionado' : '+ Adicionar Almoço (+ R$ 139,90)'}
+              </label>
+            </div>
+
+          </div>
+        </div>
+
+        {/* ======================================================== */}
+        {/* FORMULÁRIO DE INSCRIÇÃO / CHECKOUT */}
+        {/* ======================================================== */}
         <div style={{ maxWidth: '850px', margin: '0 auto', width: '100%' }}>
           <section id="comprar" className="glass-panel" style={{ border: '1px solid var(--primary)', boxShadow: '0 0 40px rgba(223, 186, 82, 0.15)', padding: '2.5rem' }}>
             <div style={{ textAlign: 'center', marginBottom: '2rem' }}>
-              <h3 style={{ fontSize: '1.9rem', color: '#fff', marginBottom: '0.4rem' }}>
+              <span style={{ fontSize: '0.82rem', textTransform: 'uppercase', letterSpacing: '1.5px', color: 'var(--primary)', fontWeight: 800 }}>
+                Inscrição Imediata
+              </span>
+              <h3 style={{ fontSize: '1.9rem', color: '#fff', margin: '0.2rem 0 0.4rem' }}>
                 Preencha seus Dados para Inscrição
               </h3>
               <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem' }}>
-                Escolha o tipo de ingresso e confirme seus dados para avançar.
+                Pagamento seguro processado pelo Asaas via PIX ou em até 10x sem juros no Cartão.
               </p>
             </div>
             
             <form className="flex flex-col" onSubmit={handleStepToSelectTickets}>
               
-              {/* Dropdown com opções de Ingressos */}
-              <div style={{ marginBottom: '1.4rem' }}>
-                <label style={{ fontSize: '0.9rem', color: 'var(--primary)', marginBottom: '0.5rem', display: 'block', fontWeight: 600 }}>
-                  Tipo de Ingresso Desejado *
-                </label>
-                <select
-                  value={selectedTicketType}
-                  onChange={(e) => setSelectedTicketType(e.target.value as 'ESTUDANTE' | 'PADRAO' | 'VIP')}
-                  className="input-field"
-                  style={{ background: '#0a0f1e', cursor: 'pointer', fontWeight: 600, border: '1px solid var(--primary)' }}
-                >
-                  <option value="ESTUDANTE" style={{ background: '#0a0f1e', color: '#fff' }}>
-                    Ingresso Estudante de Direito (50 vagas) — R$ 150,00
-                  </option>
-                  <option value="PADRAO" style={{ background: '#0a0f1e', color: '#fff' }}>
-                    Ingresso Padrão (400 vagas) — R$ 280,00
-                  </option>
-                  <option value="VIP" style={{ background: '#0a0f1e', color: '#fff' }}>
-                    ★ Kit Aniversário 30 Anos Arbitragem e Mediação (100 vagas com Kit VIP e Café 8h) — R$ 427,00
-                  </option>
-                </select>
+              {/* Resumo do Pedido no Formulário */}
+              <div style={{
+                background: 'rgba(0,0,0,0.35)',
+                border: '1px solid rgba(223, 186, 82, 0.3)',
+                borderRadius: '12px',
+                padding: '1.2rem',
+                marginBottom: '1.5rem'
+              }}>
+                <div className="flex items-center justify-between" style={{ marginBottom: '0.6rem' }}>
+                  <span style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600 }}>
+                    Ingresso Oficial (Certificados + Apostila + E-book + Café/Água o dia todo)
+                  </span>
+                  <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '1rem' }}>
+                    R$ 490,00
+                  </span>
+                </div>
+
+                {includeKit && (
+                  <div className="flex items-center justify-between" style={{ marginBottom: '0.4rem', fontSize: '0.88rem', color: '#ffeca8' }}>
+                    <span>+ Kit Comemorativo 30 Anos (Moleskine, Caneca, Botton, Chaveiro, Suporte, Cordão)</span>
+                    <span style={{ fontWeight: 700 }}>+ R$ 109,90</span>
+                  </div>
+                )}
+
+                {includeBuffet && (
+                  <div className="flex items-center justify-between" style={{ marginBottom: '0.4rem', fontSize: '0.88rem', color: '#ffeca8' }}>
+                    <span>+ Almoço Buffet Completo no Versá (Parrilla assistida, saladas, pratos quentes e sobremesas)</span>
+                    <span style={{ fontWeight: 700 }}>+ R$ 139,90</span>
+                  </div>
+                )}
+
+                <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.8rem', marginTop: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
+                  <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', fontWeight: 600 }}>Total Previsto:</span>
+                  <div style={{ textAlign: 'right' }}>
+                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>
+                      R$ {totalPreview.toFixed(2).replace('.', ',')}
+                    </div>
+                    <span style={{ fontSize: '0.85rem', color: '#ffeca8', fontWeight: 600 }}>
+                      em até 10x de R$ {installmentValue} sem juros
+                    </span>
+                  </div>
+                </div>
               </div>
 
               {/* CPF com verificação automática */}
@@ -814,7 +1070,7 @@ export default function Home() {
                         CPF já cadastrado no sistema!
                       </strong>
                       <span style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)' }}>
-                        Identificamos seu cadastro anterior. Deseja acessar seus ingressos existentes?
+                        Identificamos seu cadastro anterior. Deseja acessar suas credenciais existentes?
                       </span>
                     </div>
                     <button
@@ -865,7 +1121,7 @@ export default function Home() {
               <div className="flex gap-4 mobile-col" style={{ marginBottom: '1.25rem' }}>
                 <div style={{ flex: 1 }}>
                   <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.85)', marginBottom: '0.45rem', display: 'block', fontWeight: 500 }}>
-                    WhatsApp *
+                    WhatsApp / Telefone *
                   </label>
                   <input 
                     type="tel" 
@@ -892,43 +1148,6 @@ export default function Home() {
                 </div>
               </div>
 
-              {/* Opção de Desconto de Associado TJAEM (20% OFF) */}
-              <div style={{
-                margin: '1.2rem 0 0.5rem',
-                padding: '1rem 1.25rem',
-                borderRadius: '12px',
-                background: isAssociate ? 'rgba(74, 222, 128, 0.12)' : 'rgba(223, 186, 82, 0.08)',
-                border: isAssociate ? '1px solid #4ade80' : '1px solid rgba(223, 186, 82, 0.25)',
-                display: 'flex',
-                alignItems: 'center',
-                justifyContent: 'space-between',
-                gap: '1rem'
-              }}>
-                <div>
-                  <div className="flex items-center gap-2" style={{ marginBottom: '0.2rem' }}>
-                    <span style={{ fontSize: '0.75rem', fontWeight: 800, color: '#000', background: '#dfba52', padding: '0.15rem 0.5rem', borderRadius: '12px' }}>
-                      20% DE DESCONTO
-                    </span>
-                    <strong style={{ fontSize: '0.95rem', color: '#fff' }}>Associado TJAEM Brasil</strong>
-                  </div>
-                  <p style={{ margin: 0, fontSize: '0.8rem', color: 'rgba(255,255,255,0.7)' }}>
-                    Possui carteirinha de Associado? Ative para aplicar o desconto na próxima etapa.
-                  </p>
-                </div>
-
-                <label style={{ display: 'inline-flex', alignItems: 'center', gap: '0.5rem', cursor: 'pointer', userSelect: 'none' }}>
-                  <input
-                    type="checkbox"
-                    checked={isAssociate}
-                    onChange={(e) => setIsAssociate(e.target.checked)}
-                    style={{ width: '18px', height: '18px', cursor: 'pointer', accentColor: '#4ade80' }}
-                  />
-                  <span style={{ fontSize: '0.85rem', fontWeight: 700, color: isAssociate ? '#4ade80' : 'rgba(255,255,255,0.85)', whiteSpace: 'nowrap' }}>
-                    {isAssociate ? 'Ativado (-20%)' : 'Sou Associado'}
-                  </span>
-                </label>
-              </div>
-
               <button 
                 type="submit" 
                 className="btn-primary btn-full" 
@@ -946,33 +1165,23 @@ export default function Home() {
                 }}
               >
                 <span style={{ fontWeight: 800, letterSpacing: '0.5px' }}>
-                  Avançar para Selecionar Ingressos →
+                  Avançar para Selecionar Quantidade →
                 </span>
                 <span style={{ 
                   fontSize: '0.85rem', 
                   fontWeight: 600, 
-                  opacity: 0.9, 
+                  opacity: 0.95, 
                   letterSpacing: '0.5px',
-                  background: 'rgba(0, 0, 0, 0.15)',
+                  background: 'rgba(0, 0, 0, 0.2)',
                   padding: '0.2rem 0.8rem',
                   borderRadius: '20px',
                   display: 'inline-block'
                 }}>
-                  {selectedTicketType === 'ESTUDANTE' 
-                    ? isAssociate 
-                      ? '🎓 Estudante • De R$ 150 por R$ 120,00 (-20%)' 
-                      : '🎓 Estudante de Direito • R$ 150,00'
-                    : selectedTicketType === 'PADRAO'
-                    ? isAssociate
-                      ? '✓ Padrão • De R$ 280 por R$ 224,00 (-20%)'
-                      : '✓ Ingresso Padrão • R$ 280,00'
-                    : isAssociate
-                      ? '★ Kit Aniversário • De R$ 427 por R$ 341,60 (-20%)'
-                      : '★ Kit Aniversário 30 Anos • R$ 427,00'}
+                  Total: R$ {totalPreview.toFixed(2).replace('.', ',')} • Em até 10x de R$ {installmentValue} sem juros ou PIX
                 </span>
               </button>
               <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.6rem' }}>
-                Na próxima etapa você define a quantidade e dados de cada participante.
+                Na próxima etapa você define a quantidade de ingressos e participantes.
               </p>
             </form>
           </section>
@@ -1027,7 +1236,14 @@ export default function Home() {
               <p style={{ color: 'rgba(255,255,255,0.7)', marginTop: '0.5rem' }}>Digite seu CPF ou E-mail para visualizar suas credenciais.</p>
             </div>
             <form className="flex flex-col gap-5" onSubmit={handleLogin}>
-              <input type="text" name="cpf" placeholder="CPF ou E-mail" className="input-field" required />
+              <input 
+                type="text" 
+                name="cpf" 
+                placeholder="CPF ou E-mail" 
+                defaultValue={loginCpf}
+                className="input-field" 
+                required 
+              />
               <input type="password" name="password" placeholder="Sua Senha (caso tenha cadastrado)" className="input-field" />
               <button type="submit" className="btn-primary btn-full" style={{ marginTop: '0.5rem', padding: '1.1rem' }} disabled={loginLoading}>
                 {loginLoading ? 'Buscando ingressos...' : 'Consultar Meus Ingressos'}

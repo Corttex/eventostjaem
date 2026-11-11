@@ -295,7 +295,7 @@ export default function SucessoPage() {
                         </span>
                         {t.isAssociate && (
                           <span style={{ background: 'rgba(223, 186, 82, 0.2)', border: '1px solid var(--primary)', color: '#ffeca8', fontSize: '0.7rem', padding: '0.15rem 0.5rem', borderRadius: '10px', fontWeight: 700 }}>
-                            ★ Associado TJAEM (-20%)
+                            ★ Associado TJAEM
                           </span>
                         )}
                         {ticketPaid ? (

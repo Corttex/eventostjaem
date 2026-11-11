@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
-import { PrismaClient } from '@prisma/client';
 import bcrypt from 'bcryptjs';
 import { getAsaasApiKey } from '@/lib/asaas';
-
-const prisma = new PrismaClient();
+import { prisma } from '@/lib/prisma';
 
 export async function POST(req: Request) {
   try {
@@ -81,20 +79,46 @@ export async function POST(req: Request) {
       console.warn('Erro ao pesquisar cliente no Asaas:', e);
     }
 
+    // Se não encontrou por CPF, tenta pesquisar por e-mail no Asaas
+    if (!customerId && buyerEmail) {
+      try {
+        const searchEmailRes = await fetch(`${asaasUrl}/customers?email=${encodeURIComponent(buyerEmail)}`, {
+          headers: {
+            'Content-Type': 'application/json',
+            'access_token': asaasApiKey || ''
+          }
+        });
+        if (searchEmailRes.ok) {
+          const emailData = await searchEmailRes.json();
+          if (emailData.data && emailData.data.length > 0) {
+            customerId = emailData.data[0].id;
+          }
+        }
+      } catch (e) {
+        console.warn('Erro ao pesquisar cliente por email no Asaas:', e);
+      }
+    }
+
     // Se não existir, cadastra no Asaas
     if (!customerId) {
+      const customerPayload: any = {
+        name: buyerName,
+        email: buyerEmail,
+        cpfCnpj: cleanBuyerCpf
+      };
+
+      // Só envia telefone se tiver formato válido brasileiro (10 ou 11 dígitos com DDD)
+      if (cleanBuyerPhone && (cleanBuyerPhone.length === 10 || cleanBuyerPhone.length === 11) && !/^(\d)\1+$/.test(cleanBuyerPhone)) {
+        customerPayload.mobilePhone = cleanBuyerPhone;
+      }
+
       const customerRes = await fetch(`${asaasUrl}/customers`, {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
           'access_token': asaasApiKey || ''
         },
-        body: JSON.stringify({
-          name: buyerName,
-          email: buyerEmail,
-          cpfCnpj: cleanBuyerCpf,
-          mobilePhone: cleanBuyerPhone
-        })
+        body: JSON.stringify(customerPayload)
       });
 
       const customerText = await customerRes.text();
@@ -106,8 +130,10 @@ export async function POST(req: Request) {
         let errorMessage = 'Erro ao cadastrar cliente no portal de pagamentos';
         if (customerRes.status === 401) {
           errorMessage = 'Erro de Autenticação (401) no Asaas. Verifique a chave de API.';
+        } else if (customerData?.errors?.[0]?.description) {
+          errorMessage = customerData.errors[0].description;
         }
-        return NextResponse.json({ error: errorMessage, details: `Status: ${customerRes.status} | Resposta: ${customerText}` }, { status: 500 });
+        return NextResponse.json({ error: errorMessage, details: customerData }, { status: customerRes.status >= 400 && customerRes.status < 500 ? 400 : 500 });
       }
 
       customerId = customerData.id;
@@ -115,40 +141,69 @@ export async function POST(req: Request) {
 
     // 3. Calcular Valor Total e Gerar a Cobrança no Asaas
     const ticketCount = attendees.length;
-    // Tipos de ingressos: 'ESTUDANTE' (R$ 150), 'PADRAO' (R$ 280), 'VIP' / 'KIT_ANIVERSARIO' (R$ 427)
-    const ticketType = body.ticketType || 'VIP';
-    const isAssociate = Boolean(body.isAssociate);
-    const associateRegistration = body.associateRegistration ? String(body.associateRegistration).trim() : null;
-    const associateDocUrl = body.associateDocUrl ? String(body.associateDocUrl).trim() : null;
+    const installments = Math.min(Math.max(Number(body.installments) || 1, 1), 10);
     
-    let baseUnitPrice = 280.00;
-    let ticketTypeName = 'Ingresso Padrão';
-    
-    if (ticketType === 'ESTUDANTE') {
-      baseUnitPrice = 150.00;
-      ticketTypeName = 'Ingresso Estudante de Direito';
-    } else if (ticketType === 'VIP' || ticketType === 'KIT_ANIVERSARIO') {
-      baseUnitPrice = 427.00;
-      ticketTypeName = 'Kit Aniversário 30 Anos Arbitragem e Mediação (VIP)';
-    } else {
-      baseUnitPrice = 280.00;
-      ticketTypeName = 'Ingresso Padrão';
+    // Configuração do Ingresso Único R$ 490,00 e Opcionais
+    const BASE_TICKET_PRICE = 490.00;
+    const KIT_PRICE = 109.90;
+    const BUFFET_PRICE = 139.90;
+
+    // Processamento de cada participante com seus opcionais
+    let totalAmount = 0;
+    const attendeeProcessedData: any[] = [];
+
+    for (const attendee of attendees) {
+      const hasKit = attendee.hasKit !== undefined ? Boolean(attendee.hasKit) : Boolean(body.hasKit);
+      const hasBuffet = attendee.hasBuffet !== undefined ? Boolean(attendee.hasBuffet) : Boolean(body.hasBuffet);
+      
+      let attendeePrice = BASE_TICKET_PRICE;
+      const extras: string[] = [];
+      if (hasKit) {
+        attendeePrice += KIT_PRICE;
+        extras.push('KIT 30 ANOS');
+      }
+      if (hasBuffet) {
+        attendeePrice += BUFFET_PRICE;
+        extras.push('ALMOÇO BUFFET');
+      }
+
+      attendeePrice = Math.round(attendeePrice * 100) / 100;
+      totalAmount += attendeePrice;
+
+      let typeDesc = 'INGRESSO_UNICO';
+      if (extras.length > 0) {
+        typeDesc += ' + ' + extras.join(' + ');
+      }
+
+      attendeeProcessedData.push({
+        ...attendee,
+        hasKit,
+        hasBuffet,
+        price: attendeePrice,
+        typeDesc
+      });
     }
 
-    // Aplicação de 20% de Desconto para Associados TJAEM Brasil
-    const discountRate = isAssociate ? 0.20 : 0.0;
-    const unitDiscount = isAssociate ? Math.round(baseUnitPrice * discountRate * 100) / 100 : 0;
-    const unitPrice = baseUnitPrice - unitDiscount;
+    totalAmount = Math.round(totalAmount * 100) / 100;
 
-    const totalAmount = ticketCount * unitPrice;
+    let chargeDescription = `Seminário Nacional 30 Anos Arbitragem e Mediação - Ingresso Oficial (${ticketCount} ${ticketCount > 1 ? 'participantes' : 'participante'})`;
+    if (paymentMethod === 'CREDIT_CARD' && installments > 1) {
+      chargeDescription += ` em ${installments}x sem juros`;
+    }
 
     const chargePayload: any = {
       customer: customerId,
       billingType: paymentMethod, // PIX, CREDIT_CARD, BOLETO
-      value: totalAmount,
       dueDate: new Date(Date.now() + 86400000).toISOString().split('T')[0], // Vence em +1 dia
-      description: `${ticketTypeName}${isAssociate ? ' [Associado TJAEM 20% OFF]' : ''} - 30 Anos Arbitragem e Mediação (${ticketCount} ${ticketCount > 1 ? 'ingressos' : 'ingresso'})`
+      description: chargeDescription
     };
+
+    if (paymentMethod === 'CREDIT_CARD' && installments > 1) {
+      chargePayload.installmentCount = installments;
+      chargePayload.totalValue = totalAmount;
+    } else {
+      chargePayload.value = totalAmount;
+    }
 
     const chargeRes = await fetch(`${asaasUrl}/payments`, {
       method: 'POST',
@@ -168,14 +223,17 @@ export async function POST(req: Request) {
       let errorMessage = 'Erro ao gerar cobrança no portal de pagamentos';
       if (chargeRes.status === 401) {
         errorMessage = 'Erro de Autenticação (401) ao gerar cobrança no Asaas.';
+      } else if (chargeData?.errors?.[0]?.description) {
+        errorMessage = chargeData.errors[0].description;
       }
-      return NextResponse.json({ error: errorMessage, details: `Status: ${chargeRes.status} | Resposta: ${chargeText}` }, { status: 500 });
+      return NextResponse.json({ error: errorMessage, details: chargeData }, { status: chargeRes.status >= 400 && chargeRes.status < 500 ? 400 : 500 });
     }
 
     // 4. Cadastrar Usuários Participantes e Criar os Ingressos (Status PENDING)
     const createdTickets = [];
 
-    for (const attendee of attendees) {
+    for (let i = 0; i < attendeeProcessedData.length; i++) {
+      const attendee = attendeeProcessedData[i];
       const cleanAttCpf = (attendee.cpf || '').replace(/\D/g, '');
       const attEmail = attendee.email?.trim() || buyerEmail;
       const attName = attendee.name?.trim() || buyerName;
@@ -202,19 +260,23 @@ export async function POST(req: Request) {
         });
       }
 
+      const methodLabel = paymentMethod === 'CREDIT_CARD' && installments > 1 
+        ? `CREDIT_CARD_${installments}X` 
+        : paymentMethod;
+
       const ticket = await prisma.ticket.create({
         data: {
           userId: attendeeUser.id,
           asaasPaymentId: chargeData.id,
-          paymentMethod: paymentMethod,
-          amount: unitPrice,
-          ticketType: ticketType,
+          paymentMethod: methodLabel,
+          amount: attendee.price,
+          ticketType: attendee.typeDesc,
           status: 'PENDING', // Fica PENDENTE até o pagamento ser confirmado!
-          isAssociate: isAssociate,
-          associateRegistration: isAssociate ? (attendee.associateRegistration || associateRegistration) : null,
-          associateDocUrl: isAssociate ? (attendee.associateDocUrl || associateDocUrl) : null,
-          associateApproved: false, // Aprovação manual do admin pós-pagamento
-          discountAmount: unitDiscount
+          isAssociate: false,
+          associateRegistration: null,
+          associateDocUrl: null,
+          associateApproved: false,
+          discountAmount: 0
         }
       });
 
@@ -223,6 +285,10 @@ export async function POST(req: Request) {
         name: attendeeUser.name,
         cpf: attendeeUser.cpf,
         email: attendeeUser.email,
+        ticketType: ticket.ticketType,
+        hasKit: attendee.hasKit,
+        hasBuffet: attendee.hasBuffet,
+        amount: ticket.amount,
         isAssociate: ticket.isAssociate,
         associateApproved: ticket.associateApproved
       });
@@ -260,6 +326,6 @@ export async function POST(req: Request) {
 
   } catch (error: any) {
     console.error('Checkout API Error:', error);
-    return NextResponse.json({ error: 'Erro interno no servidor', details: error.message }, { status: 500 });
+    return NextResponse.json({ error: error?.message || 'Erro interno no servidor', details: error?.stack || error?.message }, { status: 500 });
   }
 }

@@ -437,7 +437,7 @@ export default function ValidadorPage() {
                   <div>
                     <strong style={{ color: '#fff', fontSize: '0.95rem', display: 'block' }}>{scan.name}</strong>
                     <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
-                      CPF: {scan.cpf} • {scan.ticketType === 'VIP' ? 'VIP Ouro' : 'Padrão'}
+                      CPF: {scan.cpf} • {scan.ticketType || 'Ingresso Oficial'}
                     </span>
                   </div>
                   <div style={{ textAlign: 'right' }}>
@@ -542,7 +542,7 @@ export default function ValidadorPage() {
                   <div style={{ color: '#fff', fontSize: '1.2rem', fontWeight: 700 }}>{lastResult.ticket.name}</div>
                   <div style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.85rem' }}>CPF: {lastResult.ticket.cpf}</div>
                   <div style={{ color: 'var(--primary)', fontSize: '0.85rem', marginTop: '0.4rem', fontWeight: 600 }}>
-                    Categoria: {lastResult.ticket.ticketType === 'VIP' ? '★ VIP Ouro (com Café 08h)' : '✓ Padrão'}
+                    Categoria: {lastResult.ticket.ticketType || 'Ingresso Oficial'}
                   </div>
                 </div>
 
