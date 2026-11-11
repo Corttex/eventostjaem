@@ -91,26 +91,35 @@ export default function Home() {
     const cleanCpf = buyerCpf.replace(/\D/g, '');
     if (cleanCpf.length === 11) {
       setCheckingCpf(true);
+      const controller = new AbortController();
+      const timeoutId = setTimeout(() => controller.abort(), 2500); // Máximo 2.5s para não travar a UI
+
       try {
         const res = await fetch('/api/check-cpf', {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ cpf: cleanCpf })
+          body: JSON.stringify({ cpf: cleanCpf }),
+          signal: controller.signal
         });
-        const data = await res.json();
-        if (data.exists) {
-          setCpfExists(true);
-          if (data.user) {
-            if (!buyerName) setBuyerName(data.user.name || '');
-            if (!buyerEmail) setBuyerEmail(data.user.email || '');
-            if (!buyerPhone) setBuyerPhone(data.user.phone || '');
+        clearTimeout(timeoutId);
+
+        if (res.ok) {
+          const data = await res.json();
+          if (data.exists) {
+            setCpfExists(true);
+            if (data.user) {
+              if (!buyerName) setBuyerName(data.user.name || '');
+              if (!buyerEmail) setBuyerEmail(data.user.email || '');
+              if (!buyerPhone) setBuyerPhone(data.user.phone || '');
+            }
+          } else {
+            setCpfExists(false);
           }
-        } else {
-          setCpfExists(false);
         }
       } catch (e) {
-        console.error(e);
+        console.warn('Verificação de CPF ignorada ou timeout:', e);
       } finally {
+        clearTimeout(timeoutId);
         setCheckingCpf(false);
       }
     }
@@ -129,8 +138,14 @@ export default function Home() {
       hasBuffet: includeBuffet
     };
     
-    sessionStorage.setItem('tjaem_buyer_data', JSON.stringify(data));
-    router.push('/selecionar-ingressos');
+    try {
+      sessionStorage.setItem('tjaem_buyer_data', JSON.stringify(data));
+    } catch (err) {
+      console.warn('Erro ao salvar no sessionStorage:', err);
+    }
+
+    // Redirecionamento direto e imediato para a seleção de ingressos
+    window.location.href = '/selecionar-ingressos';
   };
 
   const handleLogin = async (e: React.FormEvent) => {

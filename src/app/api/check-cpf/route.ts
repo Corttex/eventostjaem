@@ -16,7 +16,8 @@ export async function POST(req: Request) {
       formattedCpf = `${cleanCpf.slice(0, 3)}.${cleanCpf.slice(3, 6)}.${cleanCpf.slice(6, 9)}-${cleanCpf.slice(9, 11)}`;
     }
 
-    const user = await prisma.user.findFirst({
+    // Timeout de segurança de 2 segundos para o banco de dados
+    const dbPromise = prisma.user.findFirst({
       where: {
         OR: [
           { cpf: cleanCpf },
@@ -32,6 +33,9 @@ export async function POST(req: Request) {
         phone: true
       }
     });
+
+    const timeoutPromise = new Promise((resolve) => setTimeout(() => resolve(null), 2000));
+    const user: any = await Promise.race([dbPromise, timeoutPromise]);
 
     if (user) {
       return NextResponse.json({
