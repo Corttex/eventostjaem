@@ -8,3 +8,4 @@ npm-debug.log
 .env*
 prisma/dev_local_data.json
 README.md
+

@@ -59,6 +59,13 @@ export async function POST(req: Request) {
     const asaasApiKey = getAsaasApiKey();
     const asaasUrl = 'https://api.asaas.com/v3';
 
+    if (!asaasApiKey || asaasApiKey.length < 15) {
+      console.error('ASAAS_API_KEY ausente ou não configurada.');
+      return NextResponse.json({ 
+        error: 'Chave ASAAS_API_KEY não encontrada nas Variáveis de Ambiente do Coolify. Por favor, adicione ASAAS_API_KEY no painel do Coolify da aplicação.' 
+      }, { status: 500 });
+    }
+
     let customerId = '';
 
     // Verifica se já existe cliente cadastrado com este CPF no Asaas

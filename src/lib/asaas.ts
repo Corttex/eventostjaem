@@ -3,14 +3,32 @@ import path from 'path';
 
 let cachedApiKey: string | null = null;
 
+function sanitizeKey(raw: string): string {
+  if (!raw) return '';
+  let k = raw.trim();
+  // Remove aspas simples ou duplas ao redor (caso colado com aspas no Coolify)
+  while ((k.startsWith('"') && k.endsWith('"')) || (k.startsWith("'") && k.endsWith("'"))) {
+    k = k.substring(1, k.length - 1).trim();
+  }
+  // Remove barras invertidas de escape
+  if (k.startsWith('\\$')) {
+    k = k.substring(1);
+  }
+  // Garante o prefixo '$' exigido pela API do Asaas
+  if (!k.startsWith('$') && k.startsWith('aact_')) {
+    k = '$' + k;
+  }
+  return k;
+}
+
 export function getAsaasApiKey(): string {
   if (cachedApiKey) return cachedApiKey;
 
-  // 1. Try process.env
-  let key = process.env.ASAAS_API_KEY || '';
+  // 1. Tentar ler de process.env (injetado pelo Coolify/Docker)
+  let key = sanitizeKey(process.env.ASAAS_API_KEY || '');
 
-  // 2. If empty or invalid, parse directly from .env file
-  if (!key || key.length < 10) {
+  // 2. Se vazio, tentar ler do arquivo .env caso exista
+  if (!key || key.length < 15) {
     try {
       const envPath = path.resolve(process.cwd(), '.env');
       if (fs.existsSync(envPath)) {
@@ -18,15 +36,7 @@ export function getAsaasApiKey(): string {
         for (const line of content.split('\n')) {
           const trimmed = line.trim();
           if (trimmed.startsWith('ASAAS_API_KEY=')) {
-            let val = trimmed.substring('ASAAS_API_KEY='.length).trim();
-            // Remove outer quotes if present
-            if ((val.startsWith('"') && val.endsWith('"')) || (val.startsWith("'") && val.endsWith("'"))) {
-              val = val.substring(1, val.length - 1);
-            }
-            if (val.startsWith('\\$')) {
-              val = val.substring(1);
-            }
-            key = val;
+            key = sanitizeKey(trimmed.substring('ASAAS_API_KEY='.length));
             break;
           }
         }
@@ -34,14 +44,6 @@ export function getAsaasApiKey(): string {
     } catch (e) {
       console.error('Erro ao ler .env para ASAAS_API_KEY:', e);
     }
-  }
-
-  // Sanitize: ensure it starts with '$' (Asaas production API keys start with '$aact_')
-  if (key.startsWith('\\$')) {
-    key = key.substring(1);
-  }
-  if (!key.startsWith('$') && key.startsWith('aact_')) {
-    key = '$' + key;
   }
 
   cachedApiKey = key;
