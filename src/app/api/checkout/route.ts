@@ -150,8 +150,8 @@ export async function POST(req: Request) {
     const ticketCount = attendees.length;
     const installments = Math.min(Math.max(Number(body.installments) || 1, 1), 10);
     
-    // Configuração do Ingresso Único R$ 490,00 e Opcionais
-    const BASE_TICKET_PRICE = 490.00;
+    // Configuração de Preço: R$ 390,00 no PIX / Boleto ou R$ 490,00 no Cartão de Crédito
+    const BASE_TICKET_PRICE = paymentMethod === 'CREDIT_CARD' ? 490.00 : 390.00;
     const KIT_PRICE = 109.90;
     const BUFFET_PRICE = 139.90;
 

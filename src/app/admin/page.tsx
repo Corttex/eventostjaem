@@ -172,7 +172,8 @@ export default function AdminPage() {
 
   const calculateManualAmount = () => {
     if (manualBaseType === 'CORTESIA') return 0.00;
-    let total = 490.00;
+    const base = manualPaymentMethod === 'PIX' ? 390.00 : 490.00;
+    let total = base;
     if (manualHasKit) total += 109.90;
     if (manualHasBuffet) total += 139.90;
     return total;
@@ -905,7 +906,7 @@ export default function AdminPage() {
                   style={{ background: '#0a0f1e' }}
                 >
                   <option value="CORTESIA">★ Cortesia de Honra / Palestrante (R$ 0,00)</option>
-                  <option value="PAGO">Ingresso Único Oficial (R$ 490,00)</option>
+                  <option value="PAGO">Ingresso Oficial (R$ 390 PIX / R$ 490 Cartão)</option>
                 </select>
               </div>
 

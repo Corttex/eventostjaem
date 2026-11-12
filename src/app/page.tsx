@@ -80,11 +80,13 @@ export default function Home() {
   const [checkingCpf, setCheckingCpf] = useState(false);
 
   // Preços
-  const BASE_PRICE = 490.00;
+  const PIX_PRICE = 390.00;
+  const CARD_PRICE = 490.00;
   const KIT_PRICE = 109.90;
   const BUFFET_PRICE = 139.90;
-  const totalPreview = BASE_PRICE + (includeKit ? KIT_PRICE : 0) + (includeBuffet ? BUFFET_PRICE : 0);
-  const installmentValue = (totalPreview / 10).toFixed(2).replace('.', ',');
+  const totalPixPreview = PIX_PRICE + (includeKit ? KIT_PRICE : 0) + (includeBuffet ? BUFFET_PRICE : 0);
+  const totalCardPreview = CARD_PRICE + (includeKit ? KIT_PRICE : 0) + (includeBuffet ? BUFFET_PRICE : 0);
+  const cardInstallmentValue = (totalCardPreview / 10).toFixed(2).replace('.', ',');
 
   // Verificar se CPF já tem cadastro ao digitar/sair do campo
   const handleCpfBlur = async () => {
@@ -364,7 +366,7 @@ export default function Home() {
                 textAlign: 'center'
               }}
             >
-              Garantir Ingresso Único (R$ 490)
+              Garantir Ingresso (R$ 390 no PIX)
             </Link>
             <button 
               onClick={() => setLoginModalOpen(true)} 
@@ -592,7 +594,7 @@ export default function Home() {
         </section>
 
         {/* ======================================================== */}
-        {/* CARD PRINCIPAL: INGRESSO ÚNICO OFICIAL (R$ 490,00) */}
+        {/* CARD PRINCIPAL: INGRESSO ÚNICO OFICIAL */}
         {/* ======================================================== */}
         <div id="ingresso-unico" style={{ maxWidth: '850px', margin: '0 auto 2.5rem' }}>
           <div 
@@ -629,7 +631,7 @@ export default function Home() {
                   padding: '0.3rem 0.8rem',
                   borderRadius: '20px'
                 }}>
-                  Lote Exclusivo
+                  Lote Promocional
                 </span>
               </div>
               <span style={{ fontSize: '0.9rem', color: '#ffeca8', fontWeight: 600 }}>
@@ -647,11 +649,14 @@ export default function Home() {
                 </p>
               </div>
               <div style={{ textAlign: 'right' }}>
-                <div style={{ fontSize: '3rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>
-                  R$ 490,00
+                <div style={{ display: 'flex', alignItems: 'baseline', justifyContent: 'flex-end', gap: '0.4rem' }}>
+                  <span style={{ fontSize: '1.1rem', color: '#4ade80', fontWeight: 800 }}>PIX:</span>
+                  <div style={{ fontSize: '2.8rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>
+                    R$ 390,00
+                  </div>
                 </div>
-                <span style={{ fontSize: '0.95rem', color: '#ffeca8', fontWeight: 700, display: 'block', marginTop: '0.3rem' }}>
-                  ou em até 10x de R$ 49,00 sem juros
+                <span style={{ fontSize: '0.95rem', color: '#ffeca8', fontWeight: 700, display: 'block', marginTop: '0.4rem' }}>
+                  ou R$ 490,00 em até 10x de R$ 49,00 sem juros
                 </span>
               </div>
             </div>
@@ -725,7 +730,7 @@ export default function Home() {
               className="btn-primary btn-full"
               style={{ padding: '1.2rem', fontSize: '1.15rem', textAlign: 'center', justifyContent: 'center' }}
             >
-              Garantir Minha Vaga — R$ 490,00 (Até 10x sem Juros)
+              Garantir Minha Vaga — R$ 390 no PIX (ou até 10x sem Juros)
             </Link>
           </div>
         </div>
@@ -1013,9 +1018,14 @@ export default function Home() {
                   <span style={{ color: '#fff', fontSize: '0.95rem', fontWeight: 600 }}>
                     Ingresso Oficial (Certificados + Apostila + E-book + Café/Água o dia todo)
                   </span>
-                  <span style={{ color: 'var(--primary)', fontWeight: 700, fontSize: '1rem' }}>
-                    R$ 490,00
-                  </span>
+                  <div style={{ textAlign: 'right' }}>
+                    <span style={{ color: '#4ade80', fontWeight: 800, fontSize: '1rem', display: 'block' }}>
+                      R$ 390,00 no PIX
+                    </span>
+                    <span style={{ color: 'rgba(255,255,255,0.6)', fontSize: '0.8rem' }}>
+                      ou R$ 490,00 no Cartão (até 10x)
+                    </span>
+                  </div>
                 </div>
 
                 {includeKit && (
@@ -1035,11 +1045,11 @@ export default function Home() {
                 <div style={{ borderTop: '1px solid rgba(255,255,255,0.1)', paddingTop: '0.8rem', marginTop: '0.6rem', display: 'flex', justifyContent: 'space-between', alignItems: 'baseline' }}>
                   <span style={{ color: 'rgba(255,255,255,0.8)', fontSize: '0.95rem', fontWeight: 600 }}>Total Previsto:</span>
                   <div style={{ textAlign: 'right' }}>
-                    <div style={{ fontSize: '1.8rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>
-                      R$ {totalPreview.toFixed(2).replace('.', ',')}
+                    <div style={{ fontSize: '1.75rem', fontWeight: 900, color: 'var(--primary)', lineHeight: 1 }}>
+                      R$ {totalPixPreview.toFixed(2).replace('.', ',')} <span style={{ fontSize: '0.9rem', color: '#4ade80', fontWeight: 700 }}>(PIX)</span>
                     </div>
-                    <span style={{ fontSize: '0.85rem', color: '#ffeca8', fontWeight: 600 }}>
-                      em até 10x de R$ {installmentValue} sem juros
+                    <span style={{ fontSize: '0.85rem', color: '#ffeca8', fontWeight: 600, display: 'block', marginTop: '0.2rem' }}>
+                      ou R$ {totalCardPreview.toFixed(2).replace('.', ',')} em até 10x de R$ {cardInstallmentValue} sem juros
                     </span>
                   </div>
                 </div>
@@ -1192,7 +1202,7 @@ export default function Home() {
                   borderRadius: '20px',
                   display: 'inline-block'
                 }}>
-                  Total: R$ {totalPreview.toFixed(2).replace('.', ',')} • Em até 10x de R$ {installmentValue} sem juros ou PIX
+                  R$ {totalPixPreview.toFixed(2).replace('.', ',')} no PIX • ou em até 10x de R$ {cardInstallmentValue} sem juros no Cartão
                 </span>
               </button>
               <p style={{ textAlign: 'center', fontSize: '0.85rem', color: 'rgba(255,255,255,0.5)', marginTop: '0.6rem' }}>

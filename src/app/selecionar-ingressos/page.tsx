@@ -36,7 +36,9 @@ export default function SelecionarIngressosPage() {
   const [loading, setLoading] = useState(false);
 
   // Valores fixos
-  const BASE_PRICE = 490.00;
+  const PIX_PRICE = 390.00;
+  const CARD_PRICE = 490.00;
+  const BASE_PRICE = paymentMethod === 'CREDIT_CARD' ? CARD_PRICE : PIX_PRICE;
   const KIT_PRICE = 109.90;
   const BUFFET_PRICE = 139.90;
 
@@ -536,9 +538,9 @@ export default function SelecionarIngressosPage() {
               <div className="flex flex-col">
                 <span style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <QrCode size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
-                  <span>PIX</span>
+                  <span>PIX — R$ 390,00</span>
                 </span>
-                <span style={{ fontSize: '0.82rem', color: '#4ade80' }}>Aprovação Instantânea via QR Code</span>
+                <span style={{ fontSize: '0.82rem', color: '#4ade80', fontWeight: 600 }}>Valor Promocional • Aprovação Instantânea</span>
               </div>
             </label>
 
@@ -563,9 +565,9 @@ export default function SelecionarIngressosPage() {
               <div className="flex flex-col">
                 <span style={{ fontWeight: 700, fontSize: '1.1rem', color: '#fff', display: 'flex', alignItems: 'center', gap: '0.75rem' }}>
                   <CreditCard size={20} color="var(--primary)" style={{ flexShrink: 0 }} />
-                  <span>Cartão de Crédito</span>
+                  <span>Cartão de Crédito — R$ 490,00</span>
                 </span>
-                <span style={{ fontSize: '0.82rem', color: '#ffeca8' }}>Até 10x sem juros</span>
+                <span style={{ fontSize: '0.82rem', color: '#ffeca8', fontWeight: 600 }}>Em até 10x de R$ 49,00 sem juros</span>
               </div>
             </label>
           </div>
