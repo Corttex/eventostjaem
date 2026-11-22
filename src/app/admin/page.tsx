@@ -55,7 +55,12 @@ export default function AdminPage() {
   });
 
   const [loading, setLoading] = useState(false);
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [staffUser, setStaffUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   // Filtros & Busca
@@ -81,6 +86,11 @@ export default function AdminPage() {
     setLoading(true);
     try {
       const res = await fetch('/api/admin/tickets', { cache: 'no-store' });
+      if (res.status === 401 || res.status === 403) {
+        setIsAuthenticated(false);
+        setStaffUser(null);
+        return;
+      }
       if (res.ok) {
         const data = await res.json();
         if (data.tickets) setTickets(data.tickets);
@@ -94,27 +104,66 @@ export default function AdminPage() {
   };
 
   useEffect(() => {
-    const isAuth = sessionStorage.getItem('admin_auth');
-    if (isAuth === 'true') {
-      setIsAuthenticated(true);
-      fetchTickets();
-    }
+    let active = true;
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/staff-auth/me', { cache: 'no-store' });
+        if (!active) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && data.user?.role === 'ADMIN') {
+            setStaffUser(data.user);
+            setIsAuthenticated(true);
+            fetchTickets();
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao verificar sessão:', err);
+      } finally {
+        if (active) setAuthChecking(false);
+      }
+    };
+    checkSession();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.trim() === '807522') {
-      sessionStorage.setItem('admin_auth', 'true');
-      setIsAuthenticated(true);
-      fetchTickets();
-    } else {
-      alert('PIN Incorreto. Utilize o PIN de administrador.');
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const res = await fetch('/api/staff-auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, requiredRole: 'ADMIN' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStaffUser(data.user);
+        setIsAuthenticated(true);
+        setPassword('');
+        fetchTickets();
+      } else {
+        setAuthError(data.error || 'E-mail ou senha inválidos.');
+      }
+    } catch {
+      setAuthError('Erro de conexão ao autenticar.');
+    } finally {
+      setAuthLoading(false);
     }
   };
 
-  const handleLogout = () => {
-    sessionStorage.removeItem('admin_auth');
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/staff-auth/logout', { method: 'POST' });
+    } catch {}
     setIsAuthenticated(false);
+    setStaffUser(null);
+    setEmail('');
+    setPassword('');
+    setTickets([]);
   };
 
   const handleConfirmPaymentManual = async (ticketId: string, asaasPaymentId?: string | null) => {
@@ -282,6 +331,17 @@ export default function AdminPage() {
     return true;
   });
 
+  if (authChecking) {
+    return (
+      <main className="container flex items-center justify-center" style={{ minHeight: '80vh', padding: '2rem 1rem' }}>
+        <div className="glass-panel" style={{ width: '100%', maxWidth: '420px', padding: '2.5rem', textAlign: 'center', border: '1px solid var(--primary)' }}>
+          <RefreshCw className="animate-spin" size={32} color="var(--primary)" style={{ margin: '0 auto 1rem' }} />
+          <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0 }}>Verificando sessão administrativa...</p>
+        </div>
+      </main>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <main className="container flex items-center justify-center" style={{ minHeight: '80vh', padding: '2rem 1rem' }}>
@@ -293,21 +353,43 @@ export default function AdminPage() {
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.9rem', marginBottom: '1.8rem' }}>
             Painel Administrativo Oficial TJAEM & CAMEB Brasil
           </p>
-          <form onSubmit={handleLogin} className="flex flex-col gap-4">
-            <input 
-              type="password" 
-              placeholder="Digite o PIN de Segurança" 
-              className="input-field" 
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              style={{ textAlign: 'center', letterSpacing: '4px', fontSize: '1.3rem', fontWeight: 700 }}
-              required 
-              autoFocus
-            />
-            <button type="submit" className="btn-primary" style={{ padding: '0.9rem' }}>
-              Autenticar e Entrar
+          <form onSubmit={handleLogin} className="flex flex-col gap-4" style={{ textAlign: 'left' }}>
+            <div>
+              <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.4rem', display: 'block' }}>
+                E-mail Administrativo
+              </label>
+              <input
+                type="email"
+                placeholder="admin@exemplo.com"
+                className="input-field"
+                value={email}
+                onChange={(e) => setEmail(e.target.value)}
+                required
+                autoFocus
+              />
+            </div>
+            <div>
+              <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.4rem', display: 'block' }}>
+                Senha
+              </label>
+              <input
+                type="password"
+                placeholder="Digite sua senha"
+                className="input-field"
+                value={password}
+                onChange={(e) => setPassword(e.target.value)}
+                required
+              />
+            </div>
+            {authError && (
+              <div style={{ background: 'rgba(248, 113, 113, 0.15)', border: '1px solid #f87171', color: '#fca5a5', padding: '0.7rem 0.9rem', borderRadius: '8px', fontSize: '0.85rem', textAlign: 'center' }}>
+                {authError}
+              </div>
+            )}
+            <button type="submit" className="btn-primary" style={{ padding: '0.9rem', marginTop: '0.2rem' }} disabled={authLoading}>
+              {authLoading ? 'Autenticando...' : 'Autenticar e Entrar'}
             </button>
-            <Link href="/" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginTop: '0.5rem', textDecoration: 'none' }}>
+            <Link href="/" style={{ color: 'rgba(255,255,255,0.5)', fontSize: '0.85rem', marginTop: '0.5rem', textDecoration: 'none', textAlign: 'center' }}>
               ← Voltar ao site do evento
             </Link>
           </form>
@@ -336,7 +418,7 @@ export default function AdminPage() {
             Painel Executivo • 30 Anos Arbitragem
           </h1>
           <p style={{ color: 'rgba(255,255,255,0.7)', fontSize: '0.95rem', margin: 0 }}>
-            01.12.2026 • Versá Restaurante & Eventos (Núcleo Bandeirante, DF). Cobranças via PIX e Cartão até 10x sem juros.
+            20.02.2027 • Versá Restaurante & Eventos (Núcleo Bandeirante, DF). Cobranças via PIX e Cartão até 10x sem juros.
           </p>
         </div>
 

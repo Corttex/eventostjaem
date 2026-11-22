@@ -317,7 +317,7 @@ export async function GET(req: Request, { params }: { params: Promise<{ id: stri
       color: primaryGold,
     });
 
-    page.drawText('01 de Dezembro de 2026 • Das 09h às 18h', {
+    page.drawText('20 de Fevereiro de 2027 • Das 09h às 18h', {
       x: cardX + 20,
       y: card2Y + card2Height - 50,
       size: 12,

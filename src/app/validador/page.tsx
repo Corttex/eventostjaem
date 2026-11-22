@@ -18,7 +18,12 @@ interface RecentScan {
 
 export default function ValidadorPage() {
   const [isAuthenticated, setIsAuthenticated] = useState(false);
-  const [pin, setPin] = useState('');
+  const [email, setEmail] = useState('');
+  const [password, setPassword] = useState('');
+  const [authChecking, setAuthChecking] = useState(true);
+  const [authLoading, setAuthLoading] = useState(false);
+  const [authError, setAuthError] = useState<string | null>(null);
+  const [staffUser, setStaffUser] = useState<{ name: string; email: string; role: string } | null>(null);
   const [soundEnabled, setSoundEnabled] = useState(true);
 
   // Scanner & Câmera State
@@ -67,20 +72,63 @@ export default function ValidadorPage() {
   };
 
   useEffect(() => {
-    const isAuth = sessionStorage.getItem('validador_auth');
-    if (isAuth === 'true') {
-      setIsAuthenticated(true);
-    }
+    let active = true;
+    const checkSession = async () => {
+      try {
+        const res = await fetch('/api/staff-auth/me', { cache: 'no-store' });
+        if (!active) return;
+        if (res.ok) {
+          const data = await res.json();
+          if (data.authenticated && (data.user?.role === 'ADMIN' || data.user?.role === 'SCANNER')) {
+            setStaffUser(data.user);
+            setIsAuthenticated(true);
+          }
+        }
+      } catch (err) {
+        console.error('Erro ao verificar sessão:', err);
+      } finally {
+        if (active) setAuthChecking(false);
+      }
+    };
+    checkSession();
+    return () => {
+      active = false;
+    };
   }, []);
 
-  const handleLogin = (e: React.FormEvent) => {
+  const handleLogin = async (e: React.FormEvent) => {
     e.preventDefault();
-    if (pin.trim() === '807522' || pin.trim() === '222222') {
-      sessionStorage.setItem('validador_auth', 'true');
-      setIsAuthenticated(true);
-    } else {
-      alert('PIN Incorreto. Utilize o PIN de portaria (807522 ou 222222).');
+    setAuthLoading(true);
+    setAuthError(null);
+    try {
+      const res = await fetch('/api/staff-auth/login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ email, password, requiredRole: 'SCANNER' })
+      });
+      const data = await res.json();
+      if (res.ok && data.success) {
+        setStaffUser(data.user);
+        setIsAuthenticated(true);
+        setPassword('');
+      } else {
+        setAuthError(data.error || 'E-mail ou senha inválidos.');
+      }
+    } catch {
+      setAuthError('Erro de conexão ao autenticar.');
+    } finally {
+      setAuthLoading(false);
     }
+  };
+
+  const handleLogout = async () => {
+    try {
+      await fetch('/api/staff-auth/logout', { method: 'POST' });
+    } catch {}
+    setIsAuthenticated(false);
+    setStaffUser(null);
+    setEmail('');
+    setPassword('');
   };
 
   // Inicializar Leitor de Câmera
@@ -140,6 +188,13 @@ export default function ValidadorPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ token: token.trim(), forceConfirm })
       });
+
+      if (res.status === 401 || res.status === 403) {
+        setIsAuthenticated(false);
+        setStaffUser(null);
+        setAuthError('Sessão expirada. Faça login novamente.');
+        return;
+      }
 
       const data = await res.json();
 
@@ -207,7 +262,18 @@ export default function ValidadorPage() {
     handleScanToken(manualCode);
   };
 
-  // TELA DE AUTENTICAÇÃO PIN PORTARIA
+  // TELA DE AUTENTICAÇÃO PORTARIA
+  if (authChecking) {
+    return (
+      <main className="container flex items-center justify-center animate-fade-in" style={{ minHeight: '85vh', padding: '2rem' }}>
+        <div className="glass-panel text-center" style={{ maxWidth: '420px', width: '100%', padding: '2.5rem' }}>
+          <RefreshCw className="animate-spin" size={34} color="var(--primary)" style={{ margin: '0 auto 1rem' }} />
+          <p style={{ color: 'rgba(255,255,255,0.75)', margin: 0 }}>Verificando sessão da portaria...</p>
+        </div>
+      </main>
+    );
+  }
+
   if (!isAuthenticated) {
     return (
       <main className="container flex items-center justify-center animate-fade-in" style={{ minHeight: '85vh', padding: '2rem' }}>
@@ -223,22 +289,39 @@ export default function ValidadorPage() {
             </p>
           </div>
 
-          <div style={{ textAlign: 'center' }}>
-            <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.5rem', display: 'block' }}>PIN de Portaria</label>
-            <input 
-              type="password" 
-              value={pin}
-              onChange={(e) => setPin(e.target.value)}
-              placeholder="••••••" 
-              className="input-field text-center" 
-              style={{ fontSize: '1.8rem', letterSpacing: '6px', fontWeight: 700 }}
-              maxLength={6}
-              required 
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.4rem', display: 'block' }}>E-mail de Operador / Admin</label>
+            <input
+              type="email"
+              value={email}
+              onChange={(e) => setEmail(e.target.value)}
+              placeholder="portaria@exemplo.com"
+              className="input-field"
+              required
+              autoFocus
             />
           </div>
 
-          <button type="submit" className="btn-primary" style={{ marginTop: '0.5rem', padding: '1rem', fontSize: '1.05rem' }}>
-            Entrar na Recepção
+          <div style={{ textAlign: 'left' }}>
+            <label style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.8)', marginBottom: '0.4rem', display: 'block' }}>Senha</label>
+            <input
+              type="password"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              placeholder="Digite sua senha"
+              className="input-field"
+              required
+            />
+          </div>
+
+          {authError && (
+            <div style={{ background: 'rgba(248, 113, 113, 0.15)', border: '1px solid #f87171', color: '#fca5a5', padding: '0.7rem 0.9rem', borderRadius: '8px', fontSize: '0.85rem' }}>
+              {authError}
+            </div>
+          )}
+
+          <button type="submit" className="btn-primary" style={{ marginTop: '0.5rem', padding: '1rem', fontSize: '1.05rem' }} disabled={authLoading}>
+            {authLoading ? 'Autenticando...' : 'Entrar na Recepção'}
           </button>
 
           <Link href="/" style={{ fontSize: '0.85rem', color: 'rgba(255,255,255,0.6)', marginTop: '0.5rem' }}>
@@ -279,10 +362,7 @@ export default function ValidadorPage() {
           </button>
 
           <button 
-            onClick={() => {
-              sessionStorage.removeItem('validador_auth');
-              setIsAuthenticated(false);
-            }}
+            onClick={handleLogout}
             style={{ background: 'transparent', border: 'none', color: '#f87171', cursor: 'pointer', fontSize: '0.85rem' }}
           >
             Sair
@@ -309,7 +389,7 @@ export default function ValidadorPage() {
               padding: '0.25rem 0.75rem', 
               borderRadius: '20px' 
             }}>
-              Online (PIN 807522)
+              Online • {staffUser?.name || 'Portaria'}
             </span>
           </div>
         </div>

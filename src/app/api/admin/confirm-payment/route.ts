@@ -1,10 +1,14 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireStaffSession } from '@/lib/auth';
 
 export const runtime = 'nodejs';
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireStaffSession(['ADMIN']);
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { ticketId, paymentId } = await req.json();
 
     if (!ticketId && !paymentId) {

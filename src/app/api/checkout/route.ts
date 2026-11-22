@@ -1,5 +1,6 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { getAsaasApiKey } from '@/lib/asaas';
 import { prisma } from '@/lib/prisma';
 
@@ -12,7 +13,11 @@ export async function POST(req: Request) {
     const buyerEmail = body.buyer?.email || body.email;
     const buyerCpf = body.buyer?.cpf || body.cpf;
     const buyerPhone = body.buyer?.phone || body.phone;
-    const buyerPassword = body.buyer?.password || body.password || 'Tjaem@2026';
+    const rawBuyerPassword = body.buyer?.password ?? body.password;
+    const buyerPassword =
+      typeof rawBuyerPassword === 'string' && rawBuyerPassword.trim()
+        ? rawBuyerPassword.trim()
+        : randomBytes(24).toString('hex');
     const paymentMethod = body.paymentMethod || 'PIX';
 
     // Lista de participantes (ingressos)
@@ -255,7 +260,7 @@ export async function POST(req: Request) {
       });
 
       if (!attendeeUser) {
-        const defaultPwd = await bcrypt.hash('Tjaem@2026', 10);
+        const defaultPwd = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
         attendeeUser = await prisma.user.create({
           data: {
             name: attName,

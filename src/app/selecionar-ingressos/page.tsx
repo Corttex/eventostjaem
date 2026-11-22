@@ -227,7 +227,7 @@ export default function SelecionarIngressosPage() {
           <div className="flex items-center gap-3">
             <Calendar size={20} color="var(--primary)" />
             <span style={{ fontSize: '0.95rem', color: 'rgba(255,255,255,0.95)', fontWeight: 500 }}>
-              01 de Dezembro de 2026 • 09h às 18h
+              20 de Fevereiro de 2027 • 09h às 18h
             </span>
           </div>
           <div className="flex items-center gap-3">

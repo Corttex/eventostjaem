@@ -1,9 +1,14 @@
 import { NextResponse } from 'next/server';
 import bcrypt from 'bcryptjs';
+import { randomBytes } from 'crypto';
 import { prisma } from '@/lib/prisma';
+import { requireStaffSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireStaffSession(['ADMIN']);
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { name, email, cpf, phone, ticketType, hasKit, hasBuffet, amount, paymentMethod } = await req.json();
 
     if (!name || !email || !cpf) {
@@ -19,7 +24,7 @@ export async function POST(req: Request) {
     });
     
     if (!user) {
-      const hashedPassword = await bcrypt.hash('123456', 10); // Senha padrão para cadastros manuais
+      const hashedPassword = await bcrypt.hash(randomBytes(24).toString('hex'), 10);
       user = await prisma.user.create({
         data: { name, email, cpf: cleanCpf, phone: phone || '0000000000', password: hashedPassword }
       });

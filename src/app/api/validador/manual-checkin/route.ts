@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireStaffSession } from '@/lib/auth';
 
 export async function POST(req: Request) {
   try {
+    const auth = await requireStaffSession(['ADMIN', 'SCANNER']);
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { ticketId, toggle } = await req.json();
 
     if (!ticketId) {

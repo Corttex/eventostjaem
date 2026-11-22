@@ -8,14 +8,14 @@ const playfair = Playfair_Display({ subsets: ['latin'], variable: '--font-playfa
 export const metadata: Metadata = {
   metadataBase: new URL('https://eventos.tjaembrasil.com.br'),
   title: 'Seminário Nacional 30 Anos da Arbitragem e Mediação no Brasil | TJAEM & CAMEB',
-  description: 'Comemoração dos 30 Anos da Lei de Arbitragem. 01 de Dezembro de 2026, 09h às 18h no Versá Restaurante & Eventos, Núcleo Bandeirante - Brasília/DF. Garanta sua credencial oficial.',
+  description: 'Comemoração dos 30 Anos da Lei de Arbitragem. 20 de Fevereiro de 2027, 09h às 18h no Versá Restaurante & Eventos, Núcleo Bandeirante - Brasília/DF. Garanta sua credencial oficial.',
   openGraph: {
     type: 'website',
     locale: 'pt_BR',
     url: 'https://eventos.tjaembrasil.com.br',
     siteName: 'TJAEM & CAMEB Brasil - Eventos',
     title: 'Seminário Nacional 30 Anos da Arbitragem e Mediação no Brasil',
-    description: 'Comemoração dos 30 Anos da Lei de Arbitragem. 01/12/2026 das 09h às 18h no Versá Eventos, Brasília/DF. Garanta sua vaga com credencial solene.',
+    description: 'Comemoração dos 30 Anos da Lei de Arbitragem. 20/02/2027 das 09h às 18h no Versá Eventos, Brasília/DF. Garanta sua vaga com credencial solene.',
     images: [
       {
         url: '/versa-1.jpg',
@@ -28,7 +28,7 @@ export const metadata: Metadata = {
   twitter: {
     card: 'summary_large_image',
     title: 'Seminário Nacional 30 Anos da Arbitragem e Mediação no Brasil | TJAEM',
-    description: 'Comemoração solene dos 30 Anos da Lei de Arbitragem no Versá Restaurante & Eventos, Brasília/DF. 01 de Dezembro de 2026.',
+    description: 'Comemoração solene dos 30 Anos da Lei de Arbitragem no Versá Restaurante & Eventos, Brasília/DF. 20 de Fevereiro de 2027.',
     images: ['/versa-1.jpg'],
   },
   icons: {

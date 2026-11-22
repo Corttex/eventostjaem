@@ -10,9 +10,9 @@ Este documento registra o estado atual do sistema após a finalização das func
   - Polling (verificação automática) de pagamento PIX no frontend.
 - **Geração de Ingressos (PDF):**
   - Criação de PDF dinâmico com `pdf-lib`.
-  - Design customizado: Logo CAMEB com fundo branco, data atualizada (20 de Outubro de 2026), e layout ajustado para QR Code.
-- **Sistema Validador de QR Code (`/validador`):**
-  - Acesso restrito por senha (master / 807522).
+  - Design customizado: Logo CAMEB com fundo branco, data atualizada (20 de Fevereiro de 2027), e layout ajustado para QR Code.
+- **Sistema Validador de QR Code (`/validador`) e Painel Admin (`/admin`):**
+  - Acesso restrito por e-mail e senha autenticados contra o banco de dados (`User` com `role` `ADMIN` / `SCANNER` e hash `bcrypt`), com sessão JWT em cookie `HttpOnly` (`JWT_SECRET`).
   - Dashboard de estatísticas em tempo real (Total Vendidos, Escaneados, Restantes).
   - Leitor de QR Code usando câmera ou leitor USB de código de barras.
   - Check-in manual com atualização em tempo real (sem recarregar a página).

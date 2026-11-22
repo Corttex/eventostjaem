@@ -245,8 +245,8 @@ export default function Home() {
             <div className="glass-panel flex flex-col items-center justify-center text-center" style={{ flex: 1, padding: '1.8rem 1.4rem', border: '1px solid rgba(223, 186, 82, 0.35)' }}>
               <Calendar color="var(--primary)" size={36} style={{ marginBottom: '1rem' }} />
               <span style={{ fontSize: '0.8rem', textTransform: 'uppercase', letterSpacing: '1px', color: 'var(--primary)', fontWeight: 700 }}>Data Oficial</span>
-              <strong style={{ fontSize: '1.35rem', marginTop: '0.2rem', color: '#fff' }}>01 de Dezembro de 2026</strong>
-              <p style={{ margin: '0.4rem 0 0', fontSize: '0.95rem', color: '#ffeca8', fontWeight: 600 }}>Terça-feira • 09h às 18h</p>
+              <strong style={{ fontSize: '1.35rem', marginTop: '0.2rem', color: '#fff' }}>20 de Fevereiro de 2027</strong>
+              <p style={{ margin: '0.4rem 0 0', fontSize: '0.95rem', color: '#ffeca8', fontWeight: 600 }}>Sábado • 09h às 18h</p>
             </div>
             <div className="glass-panel flex flex-col items-center justify-center text-center" style={{ flex: 1, padding: '1.8rem 1.4rem', border: '1px solid rgba(223, 186, 82, 0.35)' }}>
               <MapPin color="var(--primary)" size={36} style={{ marginBottom: '1rem' }} />
@@ -635,7 +635,7 @@ export default function Home() {
                 </span>
               </div>
               <span style={{ fontSize: '0.9rem', color: '#ffeca8', fontWeight: 600 }}>
-                Terça, 01.12.2026 • 09h às 18h
+                Sábado, 20.02.2027 • 09h às 18h
               </span>
             </div>
 

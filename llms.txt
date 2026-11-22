@@ -20,10 +20,10 @@ This is a Next.js (App Router) application built for selling event tickets and v
 
 2. **Ticket Generation (PDF):**
    - Upon successful payment, `/api/ticket/[id]` generates a PDF ticket using `pdf-lib`.
-   - The PDF includes a white-background CAMEB logo, the event date (October 20, 2026), and a QR Code for validation.
+   - The PDF includes a white-background CAMEB logo, the event date (February 20, 2027), and a QR Code for validation.
 
-3. **Validator Dashboard (`/validador`):**
-   - Protected by simple auth (username: `master`, password/pin: `807522`).
+3. **Validator Dashboard (`/validador`) and Admin (`/admin`):**
+   - Protected by email/password authentication against the `User` table (`ADMIN`/`SCANNER` roles, `bcrypt` password hash) using an `HttpOnly` JWT session cookie (`JWT_SECRET`).
    - Displays real-time stats: Total Sold, Scanned, Remaining.
    - List of all tickets (both Paid and Pending).
    - Allows manual check-in via toggle switch (`/api/validador/manual-checkin`).

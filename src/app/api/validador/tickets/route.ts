@@ -1,8 +1,12 @@
 import { NextResponse } from 'next/server';
 import { prisma } from '@/lib/prisma';
+import { requireStaffSession } from '@/lib/auth';
 
 export async function GET(req: Request) {
   try {
+    const auth = await requireStaffSession(['ADMIN', 'SCANNER']);
+    if (auth.errorResponse) return auth.errorResponse;
+
     const { searchParams } = new URL(req.url);
     const filter = searchParams.get('filter'); // 'ALL', 'PAID', 'PENDING', 'SCANNED'
 

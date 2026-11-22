@@ -40,7 +40,7 @@ export async function POST(req: Request) {
     // Se senha foi enviada, valida
     if (password && user.password) {
       const isMatch = await bcrypt.compare(password, user.password);
-      if (!isMatch && password !== '123456' && password !== 'Tjaem@2026') {
+      if (!isMatch) {
         return NextResponse.json({ error: 'Senha incorreta para este CPF.' }, { status: 401 });
       }
     }
